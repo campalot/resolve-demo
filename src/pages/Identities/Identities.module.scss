@@ -1,0 +1,127 @@
+@use "../../styles/tokens" as tokens;
+
+.interactions {
+  display: flex;
+  flex-direction: column;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  list-style: none;
+  padding: 0;
+  margin-top: var(--space-md);
+
+  display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+}
+
+.row {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-muted-bg);
+  }
+}
+
+.row-link {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-md);
+  text-decoration: none;
+  color: unset;
+}
+
+.row-link:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.title {
+  font-weight: 600;
+  color: var(--color-text-priimary);
+}
+
+.meta {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(space-xs);
+}
+
+.status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.approved {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.date {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.filtersButton {
+  background: none;
+  border: none;
+  position: relative;
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--color-brand-600);
+    color: white;
+    font-size: 11px;
+    border-radius: 999px;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.paginationBar {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.loading-message {
+  padding: var(--space-md);
+}
