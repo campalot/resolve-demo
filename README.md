@@ -4,6 +4,15 @@ A React + TypeScript + GraphQL application modeling workspace-scoped workflows, 
 
 This project is intentionally architecture-focused. It demonstrates how complex UI behavior can be driven by explicit domain modeling rather than ad-hoc component logic.
 
+## Live Demo
+
+A deployed version of the application is available here:
+
+🔗 https://resolve-demo.vercel.app/
+
+No authentication is required.  
+The app uses a simulated in-memory GraphQL execution layer, so data resets on hard refresh.
+
 ## Why This Project Exists
 
 In previous roles, I worked on enterprise-style applications involving:
