@@ -16,15 +16,19 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        // entries[0] is your sentinel <li>
+        // entries[0] is the sentinel <li>
         if (entries[0].isIntersecting && hasMore && !loading) {
           fetchNextPage();
         }
       },
       {
-        // root: null defaults to the browser viewport
-        // If list is inside a scrolling div, set root: yourListRef.current
-        threshold: 0.1,
+        // Set the <ul> as the container to watch
+        root: feedRef.current,
+        // trigger when 10% of the 1px sentinel is visible
+        //threshold: 0.1,
+        threshold: 0,
+        // Trigger when the sentinel is 200px away from the bottom of the viewport
+        rootMargin: "0px 0px 200px 0px",
       },
     );
 
@@ -38,7 +42,7 @@ export const Dashboard: React.FC = () => {
   return (
     <div
       ref={feedRef}
-      className={styles.dashboardFeed} /*onScroll={handleScroll}*/
+      className={styles.dashboardFeed}
     >
       <h1>Activity</h1>
       <ul role="feed" aria-busy={loading} className={styles.dashboardList}>

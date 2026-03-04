@@ -275,26 +275,16 @@ A custom pagination component is used instead of a UI library version to keep be
 
 ## Infinite Scroll (Dashboard & Global Search)
 
-Infinite scroll is used where pagination state does not need to persist in the URL.
+Infinite scroll is used where pagination state does not need to persist in the URL. Both features utilize a **Cache-Driven Reactive Pattern** to ensure data consistency and UI performance.
 
-Two patterns are used:
+### Core Implementation:
 
-### Dashboard Activity Feed
+- **GraphQL Offset + Limit**: Pagination is handled via standard offset/limit variables.
+- **Apollo Cache `typePolicies.merge`**: Results are never concatenated in local component state. Instead, the cache policy merges incoming results into the existing `results` array based on the `offset` argument.
+- **Reactive Hooks**: Components (e.g., `useSearchResults`) react to cache updates. This ensures that if search data is updated elsewhere, the UI stays in sync without manual refetching.
+- **Threshold Trigger**: A `handleScroll` listener triggers `fetchMore` when the user scrolls to within a specific threshold of the list bottom.
 
-- Pagination is handled via GraphQL offset + limit
-- Apollo cache typePolicies.merge appends results
-- The hook reacts to cache updates rather than concatenating locally
-- Scroll position is preserved naturally because the list grows in place
-
-This mirrors how a production backend-driven feed would behave.
-
-### Global Search
-
-- Results are incrementally fetched
-- Concatenation is handled in component state
-- Used for lightweight discovery-style interaction
-
-In both cases, pagination state is intentionally not encoded in the URL.
+This pattern allows the list to grow "in place," naturally preserving scroll position and reducing the overhead of local state management.
 
 ---
 
@@ -357,7 +347,7 @@ This avoids repeating hard-coded values and keeps visual decisions consistent ac
 
 CSS Modules provide style isolation while allowing predictable overrides. Class names use dash-case in SCSS and are accessed as camelCase in JSX for clarity and consistency.
 
-Material UI is used selectively for complex controls (e.g., Autocomplete). Core layout and structural components are custom-built.
+Material UI is used selectively for complex controls (e.g., Global Search). Core layout and structural components are custom-built.
 
 The goal is consistency and clarity rather than heavy theming.
 

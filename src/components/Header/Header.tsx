@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { useParams } from "react-router-dom";
 import type { HTMLAttributes } from "react";
-import GlobalSearchAppBar from "../Search/GlobalSearchAppBar";
+import { GlobalSearchAppBar } from "../Search/GlobalSearchAppBar";
 import { BreakpointContext } from "../../contexts/Breakpoints/BreakpointContext";
 import IconHamburgerCollapse from "../../assets/hamburger-collapse.svg?react";
 import IconHamburgerExpand from "../../assets/hamburger-expand.svg?react";
@@ -30,13 +30,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, isSidebarOpen }) =>
     <header className={styles.header}>
       <div className={styles.left}>
         {isMobile ? (
-          <> 
+          <>
             <button
               type="button"
               aria-label={
-                isSidebarOpen
-                  ? "Close navigation menu"
-                  : "Open navigation menu"
+                isSidebarOpen ? "Close navigation menu" : "Open navigation menu"
               }
               aria-expanded={isSidebarOpen}
               aria-controls="app-sidebar"

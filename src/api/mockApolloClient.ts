@@ -663,29 +663,25 @@ export const client = new ApolloClient({
     typePolicies: {
       Query: {
         fields: {
-          // interactionActivities: {
-          //   keyArgs: ["filters", "workspaceId"],
-          //   merge(existing, incoming, { args }) {
-          //     const offset = args?.offset ?? 0;
+          search: {
+            keyArgs: ["workspaceId", "queryString"],
+            merge(existing, incoming, { args }) {
+              const offset = args?.offset ?? 0;
+              // 1. Maintain the existing results or start fresh
+              const mergedResults = existing ? [...existing.results] : [];
               
-          //     // 1. Reset on fresh load or refetch
-          //     if (offset === 0 || !existing) return incoming;
+              // 2. Splice incoming results into the specific offset position
+              for (let i = 0; i < incoming.results.length; ++i) {
+                mergedResults[offset + i] = incoming.results[i];
+              }
 
-          //     const existingResults = existing.results ?? [];
-          //     const incomingResults = incoming.results ?? [];
-
-          //     // 2. Filter out any incoming items that are already in our cache
-          //     // This prevents the "Duplicate Key" warning if a fetch repeats
-          //     const filteredIncoming = incomingResults.filter(
-          //       (incomingItem) => !existingResults.some((exists) => exists.id === incomingItem.id)
-          //     );
-
-          //     return {
-          //       ...incoming,
-          //       results: [...existingResults, ...filteredIncoming],
-          //     };
-          //   },
-          // },
+              // 3. Return a combined object, but ensure the structure is stable
+              return {
+                ...incoming,
+                results: mergedResults,
+              };
+            },
+          },
           interactionActivities: {
             // 1. Tell Apollo which variables define a "unique" list
             keyArgs: ["filters", "workspaceId"], 
@@ -701,33 +697,11 @@ export const client = new ApolloClient({
               // Otherwise, it's a "Load More" action
               // We take the existing results and append the new ones
               const mergedResults = existing ? [...existing.results] : [];
-              // const newResults = incoming.results.filter(
-              //   (incomingItem: InteractionActivity) => !mergedResults.some((exists) => exists.id === incomingItem.id)
-              // );
               return {
                 ...incoming,
                 results: [...mergedResults, ...incoming.results],
-                //results: [...mergedResults, ...newResults],
               };
             },
-            // merge(existing, incoming, { args }) {
-            //   const offset = args?.offset ?? 0;
-              
-            //   if (offset === 0 || !existing) return incoming;
-
-            //   const existingResults = existing.results ?? [];
-            //   const incomingResults = incoming.results ?? [];
-
-            //   // SAFEGUARD: Only add items that aren't already in the list
-            //   const filteredIncoming = incomingResults.filter(
-            //     (incomingItem) => !existingResults.some((exists) => exists.id === incomingItem.id)
-            //   );
-
-            //   return {
-            //     ...incoming,
-            //     results: [...existingResults, ...filteredIncoming],
-            //   };
-            // }
           },
         },
       },
