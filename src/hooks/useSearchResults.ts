@@ -1,38 +1,29 @@
-import { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client";
 import { GET_SEARCH_RESULTS } from "../graphql/queries/getSearchResults";
 import type { SearchResult } from "../graphql/types";
 import { useWorkspace } from "../contexts/Workspace/WorkspaceContext";
 
 export function useSearchResults(queryString: string, limit: number = 10) {
-  const workspace = useWorkspace();
-  const [offset, setOffset] = useState(0);
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [hasMore, setHasMore] = useState(true);
+  const { id: workspaceId } = useWorkspace();
 
-  const { loading, error } = useQuery(GET_SEARCH_RESULTS, {
-    variables: { workspaceId: workspace.id, queryString, offset, limit },
+  const { data, loading, error, fetchMore } = useQuery(GET_SEARCH_RESULTS, {
+    variables: { workspaceId, queryString, offset: 0, limit },
     skip: !queryString,
     notifyOnNetworkStatusChange: true,
-    onCompleted: (data) => {
-      if (!data?.search) return;
-      
-      const newResults = data.search.results;
-      setResults((prev) => (offset === 0 ? newResults : [...prev, ...newResults]));
-      setHasMore(data.search.pageInfo.hasMore);
-    },
   });
 
-  // Keep this to reset state when the user types a new search
-  useEffect(() => {
-    setOffset(0);
-    setResults([]);
-    setHasMore(true);
-  }, [queryString]);
+  const results: SearchResult[] = data?.search?.results ?? [];
+  const hasMore: boolean = data?.search?.pageInfo?.hasMore ?? false;
 
   const fetchNextPage = () => {
+    // Only fetch if we aren't already loading and there's more data
     if (!loading && hasMore) {
-      setOffset((prev) => prev + limit);
+      fetchMore({
+        variables: {
+          // Use the actual current length of the results array for the next offset
+          offset: results.length,
+        },
+      });
     }
   };
 
