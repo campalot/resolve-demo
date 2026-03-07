@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithRouter } from "../setup/test-utils";
 import AppRoutes from "../../src/routes/AppRoutes";
@@ -40,8 +40,9 @@ describe("Interaction workflow (keyboard + modal)", () => {
     await user.keyboard("{Enter}");
 
     // Modal should appear
-    const confirmButton = await screen.findByRole("button", {
-      name: /confirm/i,
+    const dialog = await screen.findByRole("dialog");
+    const confirmButton = await within(dialog).findByRole("button", {
+      name: /submit/i,
     });
 
     expect(confirmButton).toBeInTheDocument();

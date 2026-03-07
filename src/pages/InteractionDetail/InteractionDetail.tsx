@@ -23,12 +23,58 @@ import { ButtonType } from "../../components/Buttons/Button";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { useToast } from "../../contexts/Toast/ToastContext";
 import type { ToastNotification } from "../../graphql/types";
+import { TRANSITION_METADATA } from "./buildInteractionMetadata";
 import styles from "./InteractionDetail.module.scss";
 
 const TABS = [
   { label: "Overview", path: "overview" },
   { label: "Activity", path: "activity" },
 ];
+
+type TransitionModalContentProps = {
+  action: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+};
+
+const TransitionModalContent: React.FC<TransitionModalContentProps> = ({
+  action,
+  onConfirm,
+  onCancel,
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const meta = TRANSITION_METADATA[action];
+
+  return (
+    <div>
+      <h2 id="modal-title">{meta.title}</h2>
+      <p className={styles.confirmMessage}>{meta.body}</p>
+      <div className={styles.actionsRow}>
+        <Button
+          buttonType={meta.type}
+          isLoading={isSubmitting}
+          onClick={async () => {
+            setIsSubmitting(true);
+            try {
+              await onConfirm();
+            } finally {
+              setIsSubmitting(false);
+            }
+          }}
+        >
+          {meta.confirmLabel}
+        </Button>
+        <Button
+          buttonType={ButtonType.Text}
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 export const InteractionDetail: React.FC = () => {
   const navigate = useNavigate();
@@ -100,43 +146,30 @@ export const InteractionDetail: React.FC = () => {
 
   const handleAction = (action: string) => {
     openModal(
-      <div>
-        <h2 id="modal-title">Confirm status update</h2>
-        <p className={styles.confirmMessage}>
-          Are you sure you want to uodate this interaction?
-        </p>
-        <div className={styles.actionsRow}>
-          <Button
-            buttonType={ButtonType.Primary}
-            onClick={async () => {
-              const nextStatus = ACTION_TO_STATUS[action];
-              await transitionInteraction({
-                variables: {
-                  id: interactionId,
-                  action,
-                  actorId: currentUser.id,
-                  workspaceId: workspace.id,
-                },
-
-                optimisticResponse: {
-                  transitionInteraction: {
-                    __typename: "Interaction",
-                    ...interaction,
-                    status: nextStatus,
-                    updatedAt: new Date().toISOString(),
-                  },
-                },
-              });
-              closeModal();
-            }}
-          >
-            Confirm
-          </Button>
-          <Button buttonType={ButtonType.Text} onClick={closeModal}>
-            Cancel
-          </Button>
-        </div>
-      </div>,
+      <TransitionModalContent
+      action={action}
+      onCancel={closeModal}
+      onConfirm={async () => {
+        const nextStatus = ACTION_TO_STATUS[action];
+        await transitionInteraction({
+          variables: {
+            id: interactionId,
+            action,
+            actorId: currentUser.id,
+            workspaceId: workspace.id,
+          },
+          optimisticResponse: {
+            transitionInteraction: {
+              __typename: "Interaction",
+              ...interaction,
+              status: nextStatus,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        });
+        closeModal();
+      }}
+    />,
     );
   };
 
