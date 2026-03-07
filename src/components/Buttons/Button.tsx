@@ -16,21 +16,31 @@ type ButtonProps = {
   children: React.ReactNode;
   buttonType?: ButtonVariant;
   size?: ButtonSize;
+  isLoading?: boolean;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 const Button: React.FC<ButtonProps> = ({
   children,
   buttonType,
   size,
+  isLoading,
+  disabled,
   ...restPops // onClick
 }) => {
-
   return (
     <button
-      className={`${styles.button} ${buttonType && styles[buttonType]} ${size && styles[size]}`}
+      className={`${styles.button} ${buttonType && styles[buttonType]} ${size && styles[size]} ${isLoading ? styles.loading : ""}`}
+      disabled={isLoading || disabled}
       {...restPops}
     >
-      {children}
+      {isLoading ? (
+        <span className={styles.spinnerContent}>
+          <span className={styles.spinner} />
+          {children}
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 };
