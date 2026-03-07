@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithRouter } from "../setup/test-utils";
 import AppRoutes from "../../src/routes/AppRoutes";
@@ -41,7 +41,7 @@ describe("Modal accessibility", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
 
     // Confirm button should be focusable
-    const confirmButton = screen.getByRole("button", { name: /confirm/i });
+    const confirmButton = within(dialog).getByRole("button", { name: /submit/i });
     confirmButton.focus();
     expect(confirmButton).toHaveFocus();
 

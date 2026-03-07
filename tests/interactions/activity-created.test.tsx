@@ -33,10 +33,14 @@ describe("Interaction workflow", () => {
 
     const interactionId = getLocation().pathname.split("/")[4];
 
-    // Submit draft
+    // Click Submit action
     await user.click(await screen.findByRole("button", { name: /submit/i }));
 
-    await user.click(await screen.findByRole("button", { name: /confirm/i }));
+    // Modal should appear
+    const dialog = await screen.findByRole("dialog");
+
+     // Submit draft
+    await user.click(await within(dialog).findByRole("button", { name: /submit/i }));
 
     // Status should update
     await screen.findByTestId("interaction-status");
