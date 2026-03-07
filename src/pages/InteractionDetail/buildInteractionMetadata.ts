@@ -1,4 +1,5 @@
 import type { Interaction } from "../../graphql/types";
+import { ButtonType } from "../../components/Buttons/Button";
 import { groupBy } from "../../helpers";
 
 const STAGE_CONFIG: Record<InteractionStage, { label: string }> = {
@@ -148,3 +149,30 @@ export function buildInteractionToastMessage(
 
   return message;
 }
+
+export const TRANSITION_METADATA: Record<string, { title: string; body: string; confirmLabel: string; type: (typeof ButtonType)[keyof typeof ButtonType] }> = {
+  SUBMIT: { 
+    title: "Submit for Review", 
+    body: "This will lock the interaction and notify the assigned reviewer.", 
+    confirmLabel: "Submit", 
+    type: ButtonType.Primary 
+  },
+  APPROVE: { 
+    title: "Approve Interaction", 
+    body: "This will move the interaction to the Finalized state.", 
+    confirmLabel: "Approve", 
+    type: ButtonType.Primary 
+  },
+  REJECT: { 
+    title: "Reject Interaction", 
+    body: "This will move the interaction to the Rejected state, from which it can be resubmitted. Please ensure feedback has been provided.", 
+    confirmLabel: "Reject", 
+    type: ButtonType.Destructive 
+  },
+  RESUBMIT: { 
+    title: "Resubmit for Review", 
+    body: "Send the updated interaction back to the reviewer.", 
+    confirmLabel: "Resubmit", 
+    type: ButtonType.Primary 
+  },
+};
