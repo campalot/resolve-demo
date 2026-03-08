@@ -8,6 +8,7 @@ import { ModalProvider } from "./components/Modals/ModalProvider";
 import { ToastProvider } from "./contexts/Toast/ToastProvider";
 import { client } from "./api/mockApolloClient";
 import AppRouting from "./routes/AppRoutes";
+import { DevOverlay } from "./components/Development/DevOverlay";
 
 const App: React.FC = () => {
   return (
@@ -18,6 +19,7 @@ const App: React.FC = () => {
             <ModalProvider>
               <BrowserRouter>
                 <AppRouting />
+                <DevOverlay />
               </BrowserRouter>
             </ModalProvider>
           </ToastProvider>

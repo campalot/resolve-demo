@@ -69,6 +69,7 @@ Custom `typePolicies` are used to:
 - Define pagination merge behavior for activity feeds  
 - Normalize optional fields (e.g., `company`, `avatarUrl`) to `null` for shape stability  
 - Return mutation-specific fields (e.g., `notifications`) without permanently merging them into stored entity state  
+- Re-calculate permittedActions reactively whenever the global simulated role changes
 
 Pagination for activity feeds relies on a cache `merge` policy, allowing incremental loading without local state concatenation.
 
@@ -87,6 +88,8 @@ Instead of returning hard-coded responses, it:
 - Resolves record types into GraphQL types  
 - Simulates network latency  
 - Updates in-memory state during mutations  
+- Persists state to localStorage via a throttled sync
+- Enforces Role-Based Access Control (RBAC) at the resolver level
 - Generates activity side effects when interactions transition  
 
 This mirrors how a real backend would shape and return data, while keeping the application fully self-contained.
@@ -133,9 +136,9 @@ state changes, activity history, and user feedback remain consistent.
 
 ## Determinism & Testability
 
-Because the execution layer runs entirely in memory:
+Because the execution layer is managed on the client:
 
-- State can be reset between tests  
+- State can be reset between tests (or manually via the Developer Overlay)
 - URL-driven behavior remains deterministic  
 - Pagination and filtering logic can be tested without stubbing network calls  
 
@@ -389,15 +392,13 @@ Testing does add some setup complexity — particularly around routing, Apollo c
 
 # Tradeoffs & Intentional Omissions
 
-Some features are intentionally simplified:
+Some features are intentionally simplified to keep the focus on architectural clarity:
 
-- Workflow enforces valid state transitions but does not implement role-based or permission-based action gating.  
-  Transition eligibility is determined solely by workflow state.  
-  In a production system, this would typically be combined with role- or policy-based authorization rules.
-- Data resets on hard refresh (mock backend limitation)  
-- Visual design is restrained  
+- Visual design is restrained: The UI uses a clean, functional aesthetic rather than high-fidelity custom brand styling.
+- No real-time collaboration: While the app models multiple users and identities, it is a single-user simulation.
+- Simplified Identity Management: Authentication is bypassed to allow immediate access to the demo environment.
 
-These tradeoffs keep the focus on architectural clarity rather than feature volume.
+These tradeoffs ensure the codebase remains readable and focused on the data-flow patterns.
 
 ---
 
@@ -414,5 +415,7 @@ It demonstrates:
 - Predictable data flow  
 - Responsive behavior  
 - Reusable component patterns  
+- Role-Based Access Control (RBAC): Actions are gated by an intersection of workflow state and user permissions.
+- Persistent Data Layer: Mock records are synchronized to localStorage to survive page refreshes.
 
 The goal is not just to show how features are built, but to demonstrate clear thinking behind architectural decisions.

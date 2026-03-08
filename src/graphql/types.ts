@@ -147,6 +147,7 @@ export type Interaction = {
   updatedAt: string;
   description?: string;
   notifications?: ToastNotification[]; 
+  permittedActions?: InteractionAction[];
 };
 
 export const interactionRoleValues = ["Buyer", "Seller", "Partner"];

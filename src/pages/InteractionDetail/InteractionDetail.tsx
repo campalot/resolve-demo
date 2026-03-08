@@ -5,7 +5,9 @@ import {
   useLocation, 
   useNavigate,
 } from "react-router-dom";
+import { useReactiveVar } from "@apollo/client/react";
 import { useMutation } from "@apollo/client/react";
+import { activeRoleVar } from "../../api/cache";
 import { TRANSITION_INTERACTION } from "../../graphql/mutations/transitionInteraction";
 import { useInteraction } from "../../hooks/useInteraction";
 import { ModalContext } from "../../components/Modals/ModalContext";
@@ -13,7 +15,7 @@ import { useWorkspacePath } from "../../hooks/useWorkspacePath";
 import { InteractionActivity } from "./InteractionActivity";
 import { InteractionOverview } from "./InteractionOverview";
 import { InteractionSidebar } from "./InteractionSidebar";
-import { ACTION_TO_STATUS, WORKFLOW } from "../../graphql/types";
+import { ACTION_TO_STATUS } from "../../graphql/types";
 import { GET_INTERACTION_ACTIVITIES } from "../../graphql/queries/getInteractionActivities";
 import { GET_IDENTITIES } from "../../graphql/queries/getIdentities";
 import { useWorkspace } from "../../contexts/Workspace/WorkspaceContext";
@@ -81,7 +83,8 @@ export const InteractionDetail: React.FC = () => {
   const location = useLocation();
   const [value, setValue] = useState(location.pathname);
   const workspace = useWorkspace();
-  
+  const currentRole = useReactiveVar(activeRoleVar); 
+
   const { openModal, closeModal } = useContext(ModalContext);
   const currentUser = useCurrentUser();
   const { addToast } = useToast();
@@ -141,35 +144,38 @@ export const InteractionDetail: React.FC = () => {
     return <div>Invalid interaction</div>;
   }
 
-  const allowedActions = WORKFLOW[interaction.status].allowedActions;
-  const primaryparty = interaction.parties.find((party) => party.role === "Seller" || party.role === "Partner");
+  // The buttons are now "Server-Driven"
+  const allowedActions = interaction.permittedActions ?? [];
+  const primaryparty = interaction.parties.find(
+    (party) => party.role === "Seller" || party.role === "Partner",
+  );
 
   const handleAction = (action: string) => {
     openModal(
       <TransitionModalContent
-      action={action}
-      onCancel={closeModal}
-      onConfirm={async () => {
-        const nextStatus = ACTION_TO_STATUS[action];
-        await transitionInteraction({
-          variables: {
-            id: interactionId,
-            action,
-            actorId: currentUser.id,
-            workspaceId: workspace.id,
-          },
-          optimisticResponse: {
-            transitionInteraction: {
-              __typename: "Interaction",
-              ...interaction,
-              status: nextStatus,
-              updatedAt: new Date().toISOString(),
+        action={action}
+        onCancel={closeModal}
+        onConfirm={async () => {
+          const nextStatus = ACTION_TO_STATUS[action];
+          await transitionInteraction({
+            variables: {
+              id: interactionId,
+              action,
+              actorId: currentUser.id,
+              workspaceId: workspace.id,
             },
-          },
-        });
-        closeModal();
-      }}
-    />,
+            optimisticResponse: {
+              transitionInteraction: {
+                __typename: "Interaction",
+                ...interaction,
+                status: nextStatus,
+                updatedAt: new Date().toISOString(),
+              },
+            },
+          });
+          closeModal();
+        }}
+      />,
     );
   };
 
@@ -204,10 +210,7 @@ export const InteractionDetail: React.FC = () => {
       <Box className={styles.interactionDetail}>
         <Box className={styles.interactionDetailHeader}>
           <Box>
-            <Typography
-              variant="h4"
-              className={styles.interactionDetailTitle}
-            >
+            <Typography variant="h4" className={styles.interactionDetailTitle}>
               {interaction.title}
             </Typography>
             <Typography className={styles.interactionDetailSubtitle}>
@@ -239,7 +242,7 @@ export const InteractionDetail: React.FC = () => {
 
             <Box className={styles.interactionDetailContent}>
               {tabId === "overview" && (
-                <InteractionOverview interaction={interaction} />   
+                <InteractionOverview interaction={interaction} />
               )}
 
               {tabId === "activity" && (
@@ -253,10 +256,11 @@ export const InteractionDetail: React.FC = () => {
               interaction={interaction}
               handleAction={handleAction}
               allowedActions={allowedActions}
+              role={currentRole}
             />
           </Box>
         </Box>
       </Box>
     </>
   );
-};;
+};;;

@@ -11,7 +11,14 @@ A deployed version of the application is available here:
 🔗 https://resolve-demo.vercel.app/
 
 No authentication is required.  
-The app uses a simulated in-memory GraphQL execution layer, so data resets on hard refresh.
+To model a realistic workflow, this demo uses a persistent execution layer. Rather than resetting on every refresh, the app synchronizes state to localStorage so that interaction updates and workflow changes are preserved between sessions.
+
+## Developer Simulation Tools
+To facilitate architectural review, the application includes a Developer Overlay (bottom-right). This allows you to:
+
+*  Toggle RBAC Roles: Instantly switch between Admin, Editor, and Viewer to see real-time, server-driven UI gating.
+*  Reset Database: Wipe the persistent localStorage and return the environment to its default mock records.
+*  Monitor Sync: Observe the background persistence heartbeat when mutations occur.
 
 ## Why This Project Exists
 
@@ -24,16 +31,11 @@ In previous roles, I worked on enterprise-style applications involving:
 *   Mutation-driven state updates
     
 
-Those systems were proprietary and are no longer publicly accessible.
+Those systems were proprietary and are no longer publicly accessible. Rather than describe that experience abstractly, this repository reconstructs similar architectural patterns in a standalone, inspectable demo.
 
-Rather than describe that experience abstractly, this repository reconstructs similar architectural patterns in a standalone, inspectable demo.
+The goal is not to build a startup product mockup. The goal is to demonstrate architectural thinking in a controlled, readable codebase. This repository is intentionally architecture-focused rather than feature-heavy.
 
-The goal is not to build a startup product mockup. The goal is to demonstrate architectural thinking in a controlled, readable codebase.
-
-This repository is intentionally architecture-focused rather than feature-heavy.
-
-No authentication is required.  
-The app uses a simulated in-memory GraphQL execution layer, so data resets on hard refresh.
+No authentication is required. (the app uses a simulated execution layer with local persistence)
 
 ## TL;DR (For Reviewers)
 
@@ -60,6 +62,9 @@ The focus is architectural clarity and predictable data flow.
 - Responsive layout with breakpoint-aware behavior
 - Keyboard-accessible UI patterns
 - Integration-style testing with Vitest and React Testing Library
+- Role-Based Permissions: You can switch between Admin, Editor, or Viewer in the bottom-right menu to see how the app's buttons and actions change instantly based on your role.
+- Persistent Data: Any status updates or workflow changes are stored in your browser's localStorage.
+- Background Saving: I've set up the "save" to happen in the background (throttled) so the UI stays fast even when data is being written to disk.
     
 
 ## Core Domain Model
@@ -95,6 +100,9 @@ Key themes:
 *   Cache policies explicitly control pagination and merging
 *   Domain logic lives in the execution layer, not UI components
 *   Global state is avoided unless clearly necessary
+*   Smart Data Loading: When the app starts, it checks for saved data first; if nothing is found, it generates a fresh set of mock records.
+*   Reactive Permissions: I’ve configured the Apollo cache to re-calculate what you’re allowed to do the moment you switch roles in the Developer Overlay.
+*   Efficient background saving: Instead of saving to the browser on every single keystroke, the app batches those updates to keep performance high.
     
 
 A detailed breakdown of architectural decisions is available here:
@@ -144,6 +152,13 @@ Run tests:
 ```bash
 npm run test  
 ```
+
+## Future Roadmap
+
+This project is an evolving architectural playground. Current planned evolutions include:
+
+*   Transactional Logging: Implementing a "System Journal" to the console to track mutation propagation and side-effects.
+*   Network Simulation: Adding latency and error-rate toggles to the Dev Overlay to test UI resilience under degraded conditions.
 
 ## Notes
 

@@ -11,11 +11,16 @@ import type {
   InteractionActivityRecord,
   InteractionParty,
   InteractionRecord,
+  InteractionState,
   ToastNotification,
 } from "../graphql/types";
+import { WORKFLOW } from "../graphql/types";
 import { parseDate } from "../helpers";
 import { transitionInteraction } from "../mocks/mockActivities";
 import { buildInteractionToastMessage } from "../pages/InteractionDetail/buildInteractionMetadata";
+import { activeRoleVar } from "./cache";
+import { ROLE_PERMISSIONS } from "../types/permissions";
+import { persistDb } from "../mocks/mockDB";
 
 export function isMemberOfWorkspace(workspaceId: string | string[], targetWorkspaceId: string) {
   if (Array.isArray(workspaceId)) {
@@ -103,6 +108,13 @@ function getProfileInteractionsAndActivities(workspaceId: string, identityId: st
 
 // Begin Projection Layer
 function resolveInteraction(interaction: InteractionRecord): Interaction {
+  const currentRole = activeRoleVar();
+  // Use that role to filter the buttons/actions
+  const workflowActions = WORKFLOW[interaction.status].allowedActions;
+  const permittedActions = workflowActions.filter(action => 
+    ROLE_PERMISSIONS[currentRole].includes(action)
+  );
+
   const mockDb = getMockDb();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { creatorId, currentReviewerId, ...resolvedInteraction } =  {
@@ -125,7 +137,10 @@ function resolveInteraction(interaction: InteractionRecord): Interaction {
     }).filter((party): party is InteractionParty => party !== null),
   };
 
-  return resolvedInteraction;
+  return {
+    ...resolvedInteraction,
+    permittedActions,
+  };
 }
 
 type IdentityStats = {
@@ -419,6 +434,15 @@ const dynamicMockLink = new ApolloLink((operation) => {
       
     } else if (operationName === 'TransitionInteraction') {
       const { id, action, actorId, workspaceId } = variables ?? {};
+      const currentRole = activeRoleVar();
+
+      // "Server-side" check if user has permission to perform action
+      if (!ROLE_PERMISSIONS[currentRole].includes(action)) {
+        withLatency(observer, () => {
+          observer.error(new Error(`Security: Role '${currentRole}' is not authorized to '${action}'`));
+        }, 250);
+        return;
+      }
 
       const interactionIndex = mockDb.interactions.findIndex(
         (i) => i.id === id
@@ -441,6 +465,8 @@ const dynamicMockLink = new ApolloLink((operation) => {
 
       mockDb.interactions[interactionIndex] = updatedInteraction;
       mockDb.interactionActivities.unshift(...newActivities);
+
+      persistDb(mockDb); 
 
       const resolvedUpdatedInteraction = resolveInteraction(updatedInteraction);
 
@@ -719,6 +745,21 @@ export const client = new ApolloClient({
             read(existing = []) { return existing; },
             // Don't try to merge it into the database permanently
             merge: false, 
+          },
+          permittedActions: {
+            read(_, { readField }) {
+              // 1. Get the current status from the cache
+              const status = readField('status') as InteractionState;
+              
+              // 2. Get the current role from our Reactive Var
+              const currentRole = activeRoleVar(); 
+
+              // 3. Re-calculate exactly like we do in the MockLink
+              const workflowActions = WORKFLOW[status]?.allowedActions || [];
+              return workflowActions.filter(action => 
+                ROLE_PERMISSIONS[currentRole].includes(action)
+              );
+            }
           },
         },
       },
