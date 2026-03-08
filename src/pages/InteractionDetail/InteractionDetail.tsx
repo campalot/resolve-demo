@@ -144,10 +144,8 @@ export const InteractionDetail: React.FC = () => {
     return <div>Invalid interaction</div>;
   }
 
-  // const allowedActions = WORKFLOW[interaction.status].allowedActions;
   // The buttons are now "Server-Driven"
   const allowedActions = interaction.permittedActions ?? [];
-  console.info("interaction=", interaction);
   const primaryparty = interaction.parties.find(
     (party) => party.role === "Seller" || party.role === "Partner",
   );
