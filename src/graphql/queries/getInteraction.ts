@@ -6,6 +6,7 @@ export const GET_INTERACTION = gql`
     interaction(workspaceId: $workspaceId, id: $interactionId) {
       ...InteractionDetails
       description
+      permittedActions
       data
     }
   }

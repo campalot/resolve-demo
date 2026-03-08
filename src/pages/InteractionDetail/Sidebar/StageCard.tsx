@@ -5,6 +5,7 @@ import Button from "../../../components/Buttons/Button";
 import { ButtonType } from "../../../components/Buttons/Button";
 import type { ButtonVariant } from "../../../components/Buttons/Button";
 import type { InteractionAction, InteractionState } from "../../../graphql/types";
+import type { Role } from "../../../api/cache";
 import styles from "./SidebarCard.module.scss";
 
 const statusColorMap: Record<InteractionState, string> = {
@@ -27,6 +28,7 @@ type StageCardProps = {
   description?: string;
   handleAction: (action: string) => void;
   allowedActions: string[];
+  role: Role;
 };
 
 export const StageCard: React.FC<StageCardProps> = ({
