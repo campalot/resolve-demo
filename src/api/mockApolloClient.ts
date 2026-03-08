@@ -21,6 +21,7 @@ import { buildInteractionToastMessage } from "../pages/InteractionDetail/buildIn
 import { activeRoleVar } from "./cache";
 import { ROLE_PERMISSIONS } from "../types/permissions";
 import { persistDb } from "../mocks/mockDB";
+import { backendLogger } from "./logger";
 
 export function isMemberOfWorkspace(workspaceId: string | string[], targetWorkspaceId: string) {
   if (Array.isArray(workspaceId)) {
@@ -433,14 +434,25 @@ const dynamicMockLink = new ApolloLink((operation) => {
       });
       
     } else if (operationName === 'TransitionInteraction') {
+      backendLogger.startGroup(operationName, variables);
+
+      // Start the "Clock" for the whole operation
+      backendLogger.latencyStart(250); 
+
       const { id, action, actorId, workspaceId } = variables ?? {};
       const currentRole = activeRoleVar();
 
       // "Server-side" check if user has permission to perform action
-      if (!ROLE_PERMISSIONS[currentRole].includes(action)) {
+      const isAllowed = ROLE_PERMISSIONS[currentRole].includes(action);
+      backendLogger.security(currentRole, action, isAllowed);
+
+      if (!isAllowed) {
+        // Fail path: End the group inside the error latency block
         withLatency(observer, () => {
+          backendLogger.latencyEnd(403);
           observer.error(new Error(`Security: Role '${currentRole}' is not authorized to '${action}'`));
-        }, 250);
+          backendLogger.endGroup();
+        }, 100);
         return;
       }
 
@@ -462,11 +474,13 @@ const dynamicMockLink = new ApolloLink((operation) => {
           actorId,
           workspaceId
         );
+      backendLogger.sideEffect(`Generated ${newActivities.length} activity records`, newActivities);
 
       mockDb.interactions[interactionIndex] = updatedInteraction;
       mockDb.interactionActivities.unshift(...newActivities);
 
       persistDb(mockDb); 
+      backendLogger.storage("Throttled save queued to LocalStorage");
 
       const resolvedUpdatedInteraction = resolveInteraction(updatedInteraction);
 
@@ -498,11 +512,13 @@ const dynamicMockLink = new ApolloLink((operation) => {
       };
 
       withLatency(observer, () => {
+        backendLogger.latencyEnd(200);
         observer.next({
           data: {
             transitionInteraction: finalData,
           }
         });
+        backendLogger.endGroup();
       }, 250);
 
       
