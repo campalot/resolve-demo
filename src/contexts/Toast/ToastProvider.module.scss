@@ -15,10 +15,9 @@
   .toast {
     --current-toast-color: var(--toast-color-neutral);
     color: #1a1a1a;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     /* Smoother, modern corners */
     padding: var(--space-md) 20px;
-    //min-width: 300px;
     background: var(--color-white);
 
     /* Remove any individual 'left' or 'transform' from the toast itself */

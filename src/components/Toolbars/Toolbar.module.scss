@@ -2,9 +2,10 @@
 
 .wrapper {
   background: #f8f9fb;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: var(--space-md);
   border: 1px solid var(--color-border-subtle);
+  margin-top: var(--space-xs);
 }
 
 .top {

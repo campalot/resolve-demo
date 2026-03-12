@@ -90,7 +90,7 @@
 
 .summary {
   background: #ebebeb;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: var(--space-md);
   color: rgba(0,0,0,0.5);
   strong {
