@@ -62,7 +62,42 @@ The goal is to preserve realistic data flow, request/response boundaries, and mu
 
 # Client Caching Strategy
 
-Apollo Client’s normalized cache is configured explicitly to control pagination and object shape behavior.
+Apollo Client’s normalized cache is configured explicitly to control pagination, object shape stability, and reactive field derivation. The following diagram illustrates how the cache acts as a live logic layer—automatically recalculating UI permissions (RBAC) whenever global state changes without requiring a network refetch:
+
+```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'primaryColor': '#f96'}}}%%
+graph LR
+    subgraph View ["View Layer"]
+        UI[React Components]
+        RoleVar((activeRoleVar))
+    end
+
+    subgraph Logic ["Execution Layer (Apollo Link)"]
+        Ops{Queries & Mutations}
+        Resolvers[resolveInteraction]
+        DB[(Mock DB / LocalStorage)]
+        
+        UI --> Ops
+        Ops --> Resolvers
+        Resolvers -->|Initial Perms| DB
+    end
+
+    subgraph Cache ["State & Reactivity"]
+        CacheStore[(Apollo Cache)]
+        Policy[Interaction TypePolicy]
+        
+        DB -->|Normalize| CacheStore
+        CacheStore --> Policy
+        RoleVar -.->|Trigger Re-calc| Policy
+        Policy -.->|permittedActions| UI
+    end
+
+    style Resolvers fill:#f96,stroke:#333
+    style RoleVar fill:#bbf,stroke-dasharray: 5 5
+    style Policy fill:#f96,stroke:#333
+```
+> **Architectural Note: Reactive RBAC**
+> While `permittedActions` are initially calculated in the resolver, they are also defined in an Apollo `typePolicy` read function. This allows the UI to reactively re-calculate permissions when the `activeRoleVar` changes (e.g., via the Developer HUD) without requiring a refetch or a manual cache update.
 
 Custom `typePolicies` are used to:
 
@@ -223,6 +258,46 @@ The goal is to keep components predictable and easy to reuse across contexts.
 
 # Filtering System
 
+```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'primaryColor': '#f96'}}}%%
+graph TD
+    subgraph Browser ["Browser / Routing (Source of Truth)"]
+        URL["URL: ?status=IN_REVIEW"]
+    end
+
+    subgraph Hook ["Filter Hook (Logic)"]
+        Read["1. readSearchParams()"]
+        Write["4. setSearchParams()"]
+    end
+
+    subgraph UI ["Filter UI (View)"]
+        Check["2. UI reflects 'Checked'"]
+        Click["3. User toggle 'Approved'"]
+        Check --> Click
+    end
+
+    subgraph Data ["Data Layer (Apollo)"]
+        Vars["5. Variables: { status: [...] }"]
+        Query["6. executeQuery(vars)"]
+    end
+
+    %% The Circular Flow
+    URL -->|Initial & Sync| Read
+    Read --> Check
+    Click --> Write
+    Write -->|Push Change| URL
+    
+    %% The Data Side-Effect
+    URL -.->|Reactive Trigger| Vars
+    Vars --> Query
+
+    style URL fill:#dfd,stroke:#333,stroke-width:2px
+    style Read fill:#f96
+    style Write fill:#f96
+    style Query fill:#bbf
+```
+> *The filtering system implements a stateless UI pattern: components do not maintain local filter state, but instead 'request' URL transitions. This ensures that browser navigation (Back/Forward) and deep-linking work out-of-the-box without manual state synchronization.*
+
 Filtering is designed to be:
 
 - URL-driven  
@@ -279,6 +354,42 @@ A custom pagination component is used instead of a UI library version to keep be
 ## Infinite Scroll (Dashboard & Global Search)
 
 Infinite scroll is used where pagination state does not need to persist in the URL. Both features utilize a **Cache-Driven Reactive Pattern** to ensure data consistency and UI performance.
+
+```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'primaryColor': '#f96'}}}%%
+graph LR
+    subgraph View ["Component Layer"]
+        UI[List View]
+        Trigger{Scroll Threshold}
+    end
+
+    subgraph Apollo ["Apollo Client"]
+        FM[fetchMore]
+        Req1[[1. Initial Request: offset 0]]
+        Req2[[3. Scroll Request: offset 20]]
+        
+        UI --> Req1
+        Trigger --> FM
+        FM --> Req2
+    end
+
+    subgraph Cache ["InMemoryCache (TypePolicy)"]
+        Merge{merge function}
+        Data[( Results Array )]
+
+        Req1 -->|"2. Fill [0...19]"| Merge
+        Req2 -->|"4. Splice [20...39]"| Merge
+        Merge --> Data
+    end
+
+    Data -.->|"5. Reactive Update: Items 1-40"| UI
+
+    style Merge fill:#f96,stroke:#333
+    style Data fill:#bbf
+    style Req1 fill:#dfd
+    style Req2 fill:#dfd
+```
+> *This indexed-merge strategy ensures that the UI is always a pure, reactive 'window' into the cache, separating the scroll-event logic from the data-rendering logic.*
 
 ### Core Implementation:
 
