@@ -2,7 +2,7 @@
 @use "../../../styles/tokens" as tokens;
 
 .mui-fieldset {
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   border-color: rgba(0, 0, 0, 0.23);
   border-style: solid;
   border-width: 1px;

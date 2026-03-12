@@ -25,7 +25,7 @@
   }
 }
 
-.rowLink {
+.row-link {
   display: flex;
   justify-content: space-between;
   padding: var(--space-md);
@@ -33,7 +33,7 @@
   color: unset;
 }
 
-.rowLink:focus-visible {
+.row-link:focus-visible {
   outline: 2px solid blue;
   outline-offset: 2px;
 }
@@ -71,7 +71,7 @@
 .status {
     font-size: 12px;
     padding: 2px var(--space-sm);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
 }
 
 .pending {
@@ -95,7 +95,7 @@
     white-space: nowrap;
 }
 
-.filtersButton {
+.filters-button {
   background: none;
   border: none;
   position: relative;
@@ -120,7 +120,7 @@
   }
 }
 
-.paginationBar {
+.pagination-bar {
   display: flex;
   justify-content: space-between;
   width: 100%;

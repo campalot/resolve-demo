@@ -15,7 +15,7 @@
 
   a {
     padding: var(--space-sm) var(--space-smd);
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     text-decoration: none;
     color: var(--color-shell-text);
 
@@ -86,7 +86,7 @@
     inset: 0 auto 0 0;
     width: 80%;
     max-width: 320px;
-    padding-top: 8px;
+    padding-top: var(--space-sm);
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateX(-100%);
     

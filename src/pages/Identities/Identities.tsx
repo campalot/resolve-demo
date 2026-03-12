@@ -8,7 +8,6 @@ import { IdentitiesFilterBar } from "./IdentitiesFilterBar";
 import { IdentitiesFilterSheet } from "./IdentitiesFilterSheet";
 import { BreakpointContext } from "../../contexts/Breakpoints/BreakpointContext";
 import FilterIcon from "../../assets/filters-svgrepo-com.svg?react";
-// import { Button } from "@mui/material";
 import Button from "../../components/Buttons/Button";
 
 const PARAM_PEOPLE = "Individual";
@@ -67,7 +66,7 @@ export const Identities: React.FC = () => {
   if (error) return <div>Failed to load identities</div>;
 
   return (
-    <section className={styles.interactions}>
+    <section className={styles.identities}>
       <h1 id="identities-table" tabIndex={-1}>
         People ({loading ? previousTotal : total})
       </h1>

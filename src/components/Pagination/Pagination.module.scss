@@ -8,8 +8,8 @@
   gap: var(--space-sm);
 
   select {
-    padding: 4px;
-    border-radius: 4px;
+    padding: var(--space-xs);
+    border-radius: var(--radius-xs);
     border-color: rgba(0, 0, 0, 0.23);
     border-style: solid;
     border-width: 1px;
