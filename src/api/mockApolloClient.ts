@@ -535,7 +535,7 @@ const dynamicMockLink = new ApolloLink((operation) => {
           }
         });
         backendLogger.endGroup();
-      }, 250);
+      }, 250); // SIMULATED LATENCY: In this instance, used to validate Optimistic UI & Skeletons
 
       
     } else if (operationName === "InteractionsReferenceData") {
