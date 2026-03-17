@@ -14,8 +14,12 @@
   margin-top: var(--space-md);
 
   display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+
+  &.sorting {
+    opacity: 0.5;
+  }
 }
 
 .filters-button {

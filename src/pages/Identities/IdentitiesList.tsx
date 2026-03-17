@@ -4,18 +4,17 @@ import { PersonCard } from "../../components/Cards/PersonCard";
 
 type IdentitiesListProps = {
   identities: IdentityCardProps[];
+  isSorting?: boolean;
 };
 
 export const IdentitiesList: React.FC<IdentitiesListProps> = ({
   identities,
+  isSorting,
 }) => {
   return (
-    <ul className={styles.list}>
+    <ul className={`${styles.list} ${isSorting ? styles.sorting : ""}`}>
       {identities.map((identity: IdentityCardProps) => (
-        <PersonCard
-          identity={identity}
-          key={identity.id}
-        />
+        <PersonCard identity={identity} key={identity.id} />
       ))}
     </ul>
   );

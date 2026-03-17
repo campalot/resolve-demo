@@ -1,5 +1,6 @@
 import { gql } from "@apollo/client";
 import { INTERACTION_DETAILS } from "../fragments/InteractionDetails";
+import { INTERACTION_ACTIVITY_DETAILS } from "../fragments/InteractionActivityDetails";
 
 export const TRANSITION_INTERACTION = gql`
   mutation TransitionInteraction(
@@ -7,12 +8,14 @@ export const TRANSITION_INTERACTION = gql`
     $action: InteractionAction!
     $actorId: ID!
     $workspaceId: ID!
+    $comment: String
   ) {
     transitionInteraction(
       id: $id
       action: $action
       actorId: $actorId
       workspaceId: $workspaceId
+      comment: $comment
     ) {
       ...InteractionDetails
       notifications {   
@@ -20,33 +23,13 @@ export const TRANSITION_INTERACTION = gql`
         message
         type
       }
+      activities {
+        __typename
+        ...InteractionActivityDetails
+        isOptimistic @client
+      }
     }
   }
    ${INTERACTION_DETAILS}
+   ${INTERACTION_ACTIVITY_DETAILS}
 `;
-
-// export const TRANSITION_INTERACTION = gql`
-//   mutation TransitionInteraction(
-//     $id: ID!
-//     $action: InteractionAction!
-//     $actorId: ID!
-//     $workspaceId: ID!
-//   ) {
-//     transitionInteraction(
-//       id: $id
-//       action: $action
-//       actorId: $actorId
-//       workspaceId: $workspaceId
-//     ) {
-//       interaction {
-//         ...InteractionDetails
-//       }
-//       notifications {
-//         __typename
-//         message
-//         type
-//       }
-//     }
-//   }
-//    ${INTERACTION_DETAILS}
-// `;

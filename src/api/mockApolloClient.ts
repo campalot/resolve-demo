@@ -124,6 +124,7 @@ function resolveInteraction(interaction: InteractionRecord): Interaction {
     creator: mockDb.identities.find((id: Identity) => id.id === interaction.creatorId)!,
     currentReviewer: mockDb.identities.find((id: Identity) => id.id === interaction.currentReviewerId) || null,
     notifications: [],
+    activities: [],
     parties: interaction.parties.map((party) => {
       const identity = mockDb.identities.find(
         (id: Identity) => id.id === party.identityId
@@ -439,7 +440,7 @@ const dynamicMockLink = new ApolloLink((operation) => {
       // Start the "Clock" for the whole operation
       backendLogger.latencyStart(250); 
 
-      const { id, action, actorId, workspaceId } = variables ?? {};
+      const { id, action, actorId, workspaceId, comment } = variables ?? {};
       const currentRole = activeRoleVar();
 
       // "Server-side" check if user has permission to perform action
@@ -472,7 +473,8 @@ const dynamicMockLink = new ApolloLink((operation) => {
           interaction,
           action,
           actorId,
-          workspaceId
+          workspaceId,
+          comment
         );
       backendLogger.sideEffect(`Generated ${newActivities.length} activity records`, newActivities);
 
@@ -505,10 +507,24 @@ const dynamicMockLink = new ApolloLink((operation) => {
         });
       }
 
+      // Conditional "Comment Added" Toast
+      if (comment && comment.trim()) {
+        notifications.push({
+          __typename: "ToastNotification",
+          message: `${actor?.name || "Unknown actor"} successfully commented on the interaction.`,
+          type: 'info'
+        });
+      }
+
+      const resolvedActivities = newActivities
+        .map(activity => resolveInteractionActivity(activity))
+        .filter(Boolean); // Remove any nulls
+
       const finalData = {
         ...resolvedUpdatedInteraction,
         __typename: "Interaction",
         notifications: notifications || [], // Fallback to empty array
+        activities: resolvedActivities || [], // Fallback to empty array
       };
 
       withLatency(observer, () => {
@@ -519,7 +535,7 @@ const dynamicMockLink = new ApolloLink((operation) => {
           }
         });
         backendLogger.endGroup();
-      }, 250);
+      }, 250); // SIMULATED LATENCY: In this instance, used to validate Optimistic UI & Skeletons
 
       
     } else if (operationName === "InteractionsReferenceData") {
@@ -669,7 +685,11 @@ const dynamicMockLink = new ApolloLink((operation) => {
             } else if (sortBy === "active") {
               resolved = resolved.sort((a, b) => b.stats.active - a.stats.active);
             } else if (sortBy === "recent") {
-              resolved = resolved.sort((a, b) => (b.stats.lastActivityAt ?? 0) - (a.stats.lastActivityAt ?? 0));
+              resolved = resolved.sort((a, b) => {
+                const dateB = b.stats.lastActivityAt ? new Date(b.stats.lastActivityAt).getTime() : 0;
+                const dateA = a.stats.lastActivityAt ? new Date(a.stats.lastActivityAt).getTime() : 0;
+                return dateB - dateA;
+              });
             }
           } else {
             resolved = resolved.sort((a, b) => a.name.localeCompare(b.name));
@@ -747,6 +767,16 @@ export const client = new ApolloClient({
           },
         },
       },
+      InteractionActivity: {
+        fields: {
+          isOptimistic: {
+            // If the field isn't in the cache, default it to false
+            read(existing = false) {
+              return existing;
+            },
+          },
+        },
+      },
       Identity: {
         fields: {
           // Force these to return null instead of undefined
@@ -758,6 +788,11 @@ export const client = new ApolloClient({
         fields: {
           notifications: {
             // This tells Apollo: "If it's missing, just return an empty array"
+            read(existing = []) { return existing; },
+            // Don't try to merge it into the database permanently
+            merge: false, 
+          },
+          activities: {
             read(existing = []) { return existing; },
             // Don't try to merge it into the database permanently
             merge: false, 

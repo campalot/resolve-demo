@@ -178,10 +178,12 @@ function createDecisionActivity(
 function createCommentAddedActivity(
   workspaceId: string,
   interaction: InteractionRecord,
-  identities: IdentityRecord[]
+  identities: IdentityRecord[],
+  body?: string, // Pass the comment
+  occurred?: string, 
 ): InteractionActivityRecord {
-  const actor = pickActorFromInteraction(interaction, identities);
-  const occurredAt = getRandomDate(interaction.createdAt, interaction.updatedAt).toISOString();
+  const actor = identities.length === 1 ? identities[0] : pickActorFromInteraction(interaction, identities);
+  const occurredAt = occurred || getRandomDate(interaction.createdAt, interaction.updatedAt).toISOString();
 
   if (!actor) throw new Error("Actor not found");
 
@@ -196,7 +198,7 @@ function createCommentAddedActivity(
     actorId: actor.id,
     metadata: {
       __typename: 'InteractionActivityMetadata_Comment',
-      commentExcerpt: loremText,
+      commentExcerpt: body || loremText,
     },
   };
 }
@@ -340,7 +342,8 @@ export function transitionInteraction(
   interaction: InteractionRecord,
   action: InteractionAction,
   actorId: string,
-  workspaceId: string
+  workspaceId: string,
+  comment?: string,
 ): TransitionResult {
   const mockDb = getMockDb();
   const allowed = WORKFLOW[interaction.status].allowedActions;
@@ -375,6 +378,18 @@ export function transitionInteraction(
       updatedInteraction: interaction, 
       newActivities: [] 
     };
+  }
+
+  // Add the User Feedback as a separate Activity record if provided
+  if (comment && comment.trim().length > 0) {
+    const commentActivity = createCommentAddedActivity(
+      workspaceId,
+      interaction,
+      [actor],
+      comment,
+      now
+    );
+    newActivities.push(commentActivity);
   }
 
   if (action === "SUBMIT" || action === "RESUBMIT") {

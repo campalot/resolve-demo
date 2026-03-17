@@ -36,12 +36,13 @@ export const Identities: React.FC = () => {
     (status?.length ?? 0) +
     (searchText ? 1 : 0);
 
-  const { identities, total, previousTotal, loading, error } = useIdentities({
-    page,
-    pageSize,
-    filters,
-    sortBy,
-  });
+  const { identities, total, previousTotal, loading, isSorting, error } =
+    useIdentities({
+      page,
+      pageSize,
+      filters,
+      sortBy,
+    });
 
   function updateParams(
     next: Partial<Record<string, string | number | undefined>>,
@@ -108,9 +109,9 @@ export const Identities: React.FC = () => {
       )}
 
       {loading ? (
-        <div className={styles.loadingMessage}>Loading interactions…</div>
+        <div className={styles.loadingMessage}>Loading identities...</div>
       ) : (
-        <IdentitiesList identities={identities} />
+        <IdentitiesList identities={identities} isSorting={isSorting} />
       )}
     </section>
   );

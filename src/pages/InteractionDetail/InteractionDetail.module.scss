@@ -92,3 +92,54 @@ button {
 .confirm-message {
   margin: var(--space-sm) 0;
 }
+
+// Transition Modal Content styles
+.transition-comment {
+  width: 100%;
+  border: 1px solid var(--toast-color-neutral);
+  border-radius: var(--radius-xs);
+  padding: var(--space-sm);
+}
+
+/* Red border when validation fails */
+.input-error {
+  border-color: var(--color-danger-500);
+  outline-color: var(--color-danger-500);
+}
+
+.comment-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-xs);
+  font-size: 0.875rem;
+}
+
+.hint-text {
+  font-size: 0.875rem;
+  color: var(--toast-color-neutral);
+  margin-top: var(--space-xs);
+}
+
+/* Red text for the error state */
+.error-text {
+  font-size: 0.875rem;
+  color: var(--color-danger-500);
+  font-weight: 500;
+  margin-top: var(--space-xs);
+}
+
+.counter {
+  font-variant-numeric: tabular-nums;
+  /* Prevents "jumping" text as numbers change */
+}
+
+.counter-pending {
+  color: var(--toast-color-neutral);
+}
+
+.counter-success {
+  color: var(--toast-color-sucess);
+  /* Using your success green token */
+  font-weight: 600;
+}
