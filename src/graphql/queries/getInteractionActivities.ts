@@ -11,6 +11,7 @@ export const GET_INTERACTION_ACTIVITIES = gql`
   interactionActivities(workspaceId: $workspaceId, filters: $filters, offset: $offset, limit: $limit) {
     results {
       ...InteractionActivityDetails
+      isOptimistic @client
     }
     pageInfo {
       total

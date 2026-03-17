@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   useParams,
   Navigate,
@@ -16,8 +16,8 @@ import { InteractionActivity } from "./InteractionActivity";
 import { InteractionOverview } from "./InteractionOverview";
 import { InteractionSidebar } from "./InteractionSidebar";
 import { ACTION_TO_STATUS } from "../../graphql/types";
-import { GET_INTERACTION_ACTIVITIES } from "../../graphql/queries/getInteractionActivities";
-import { GET_IDENTITIES } from "../../graphql/queries/getIdentities";
+import type { Identity, InteractionActivity as Activity } from "../../graphql/types";
+import type { ClientActivity } from "./InteractionActivity";
 import { useWorkspace } from "../../contexts/Workspace/WorkspaceContext";
 import { Box, Tab, Tabs, Typography } from "@mui/material";
 import Button from "../../components/Buttons/Button";
@@ -33,9 +33,14 @@ const TABS = [
   { label: "Activity", path: "activity" },
 ];
 
+const COMMENT_PLACE_HOLDER = "Enter your notes here";
+const MIN_CONDITIONAL_CHARACTERS = 20;
+const CONDITIONAL_TOO_FEW_CHARACTERS_ERROR = `Please use at least ${MIN_CONDITIONAL_CHARACTERS} characters`;
+
+
 type TransitionModalContentProps = {
   action: string;
-  onConfirm: () => void;
+  onConfirm: (comment: string) => Promise<void>;
   onCancel: () => void;
 };
 
@@ -44,25 +49,89 @@ const TransitionModalContent: React.FC<TransitionModalContentProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [comment, setComment] = useState("");
+  const [showError, setShowError] = useState(false); // Track validation state
+
+  const isRejecting = action === "REJECT";
+  const charCount = comment.length;
+  const isTooShort = charCount < MIN_CONDITIONAL_CHARACTERS;
+  const displayError = isRejecting && showError && isTooShort;
   const meta = TRANSITION_METADATA[action];
+
+  const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setComment(event.target.value);
+    // Clear error message once they start typing enough characters
+    if (showError && event.target.value.length >= MIN_CONDITIONAL_CHARACTERS) {
+      setShowError(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    // Validation logic
+    if (isRejecting && isTooShort) {
+      setShowError(true);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onConfirm(comment);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    // Focus the textarea immediately when the modal opens
+    textareaRef.current?.focus();
+  }, []);
 
   return (
     <div>
       <h2 id="modal-title">{meta.title}</h2>
       <p className={styles.confirmMessage}>{meta.body}</p>
+
+      <div className={styles.textareaContainer}>
+        <textarea
+          className={`${styles.transitionComment} ${displayError ? styles.inputError : ""}`}
+          onChange={handleTextChange}
+          value={comment}
+          placeholder={COMMENT_PLACE_HOLDER}
+          rows={5}
+          aria-describedby="comment-hint"
+          aria-invalid={displayError}
+          ref={textareaRef}
+        />
+
+        {/* Helper Hint / Error Message */}
+        {isRejecting && (
+          <div
+            id="comment-info"
+            className={styles.commentInfoRow}
+            role={displayError ? "alert" : "status"}
+          >
+            <span className={displayError ? styles.errorText : styles.hintText}>
+              {displayError
+                ? CONDITIONAL_TOO_FEW_CHARACTERS_ERROR
+                : `Required for rejection`}
+            </span>
+
+            <span
+              className={`${styles.counter} ${isTooShort ? styles.counterPending : styles.counterSuccess}`}
+            >
+              {charCount} / {MIN_CONDITIONAL_CHARACTERS}
+            </span>
+          </div>
+        )}
+      </div>
       <div className={styles.actionsRow}>
         <Button
           buttonType={meta.type}
           isLoading={isSubmitting}
-          onClick={async () => {
-            setIsSubmitting(true);
-            try {
-              await onConfirm();
-            } finally {
-              setIsSubmitting(false);
-            }
-          }}
+          onClick={handleConfirm}
+          aria-describedby={displayError ? "comment-hint" : undefined}
         >
           {meta.confirmLabel}
         </Button>
@@ -96,34 +165,73 @@ export const InteractionDetail: React.FC = () => {
   const { interaction, loading, error, hasId } = useInteraction(interactionId);
 
   const [transitionInteraction] = useMutation(TRANSITION_INTERACTION, {
-    refetchQueries: [
-      {
-        query: GET_INTERACTION_ACTIVITIES,
-        variables: {
-          filters: {
-            interactionId,
+    update(cache, { data }) {
+      const payload = data?.transitionInteraction;
+      if (!payload || !payload.activities) return;
+
+      cache.modify({
+        id: `Identity:${currentUser.id}`,
+        fields: {
+          stats(existing) {
+            return { ...existing, lastActivityAt: new Date().toISOString() };
           },
-          workspaceId: workspace.id,
-          offset: 0,
-          limit: 20,
         },
-      },
-      {
-        query: GET_INTERACTION_ACTIVITIES,
-        variables: {
-          filters: {},
-          workspaceId: workspace.id,
+      });
+
+      cache.modify({
+        fields: {
+          interactionActivities(existingData = { results: [] }, { readField }) {
+            const incomingActivities = payload.activities;
+            const isOptimistic = incomingActivities.some(
+              (a: ClientActivity) => a.id === "temp-skeleton-id",
+            );
+
+            // 1. Only "clean" the existing list if we are NOT currently
+            // trying to put the skeleton in.
+            const cleanExisting = isOptimistic
+              ? existingData.results
+              : existingData.results.filter(
+                  (ref: Activity) =>
+                    readField("id", ref) !== "temp-skeleton-id",
+                );
+
+            // 2. Filter out duplicates (standard logic)
+            const newActivities = incomingActivities.filter(
+              (incoming: Activity) =>
+                !cleanExisting.some(
+                  (existing: Activity) =>
+                    readField("id", existing) === incoming.id,
+                ),
+            );
+
+            return {
+              ...existingData,
+              results: [...newActivities, ...cleanExisting], // Skeleton goes to the top!
+              pageInfo: {
+                ...existingData.pageInfo,
+                total:
+                  (existingData.pageInfo?.total || 0) +
+                  newActivities.filter((a: ClientActivity) => !a.isOptimistic)
+                    .length,
+              },
+            };
+          },
         },
-      },
-      {
-        query: GET_IDENTITIES,
-        variables: {
-          filters: {},
-          workspaceId: workspace.id,
-        },
-      },
-    ],
-    awaitRefetchQueries: true,
+      });
+
+      // This deletes the 'identities' cache entries for THIS workspace.
+      // The next time a component needs this list (like sort order needs 
+      // to refresh), Apollo will automatically refetch it from the server. 
+      // It's surgical refetching.
+      cache.evict({
+        id: "ROOT_QUERY",
+        fieldName: "identities",
+      });
+
+      // This clears out the "dead" references
+      cache.gc();
+    },
+    
     onCompleted: (data) => {
       const { notifications } = data.transitionInteraction;
       notifications.forEach(
@@ -151,29 +259,58 @@ export const InteractionDetail: React.FC = () => {
   );
 
   const handleAction = (action: string) => {
+    const optimisticActor: Identity = {
+      __typename: "Identity",
+      id: currentUser.id,
+      workspaceId: workspace.id,
+      name: currentUser.name || "Current User",
+      type: "Individual",
+      status: "Active",
+      createdAt: new Date().toISOString(),
+      country: "US",
+    };
+
     openModal(
       <TransitionModalContent
         action={action}
         onCancel={closeModal}
-        onConfirm={async () => {
-          const nextStatus = ACTION_TO_STATUS[action];
+        onConfirm={async (comment: string) => {
+          closeModal();
           await transitionInteraction({
             variables: {
               id: interactionId,
               action,
               actorId: currentUser.id,
               workspaceId: workspace.id,
+              comment,
             },
             optimisticResponse: {
               transitionInteraction: {
-                __typename: "Interaction",
                 ...interaction,
-                status: nextStatus,
+                __typename: "Interaction",
+                id: interactionId,
+                status: ACTION_TO_STATUS[action],
                 updatedAt: new Date().toISOString(),
+                activities: [
+                  {
+                    id: "temp-skeleton-id",
+                    __typename: "InteractionActivity",
+                    workspaceId: workspace.id,
+                    type: "SKELETON",
+                    interactionId: interaction.id,
+                    interactionTitle: interaction.title,
+                    occurredAt: new Date().toISOString(),
+                    actor: optimisticActor,
+                    isOptimistic: true,
+                    metadata: {
+                      __typename: "InteractionActivityMetadata_Created",
+                    },
+                  },
+                ],
+                notifications: [],
               },
             },
           });
-          closeModal();
         }}
       />,
     );
@@ -263,4 +400,4 @@ export const InteractionDetail: React.FC = () => {
       </Box>
     </>
   );
-};;;
+};

@@ -7,6 +7,9 @@ import styles from "./InteractionActivity.module.scss";
 import { getActivityIcon } from "../../components/Badges/helpers";
 import type { InteractionActivity as InteractionActivityType } from "../../graphql/types";
 
+export interface ClientActivity extends InteractionActivityType {
+  isOptimistic?: boolean;
+}
 
 type InteractionActivityProps = {
   interactionId: string;
@@ -27,12 +30,28 @@ export const InteractionActivity: React.FC<InteractionActivityProps> = ({
 
   return (
     <Box className={styles.timeline}>
-      {results.map((activity: InteractionActivityType) => {
+      {results.map((activity: ClientActivity) => {
+        // 1. Handle the Skeleton State
+        if (activity.isOptimistic) {
+          return (
+            <Box key={activity.id} className={styles.timelineItem}>
+              {/* Replace with your actual Skeleton component/markup */}
+              <Box className={styles.timelineIconSkeleton} />
+              <Box className={styles.timelineContent}>
+                <div className={styles.skeletonHeader} />
+                <div className={styles.skeletonBody} />
+              </Box>
+            </Box>
+          );
+        }
+
+        // 2. Handle the Actual Activity State
         const IconComponent: React.FC<HTMLAttributes<SVGElement>> =
           getActivityIcon(activity) || null;
+
         return (
           <Box key={activity.id} className={styles.timelineItem}>
-            <IconComponent className={styles.timelineIcon} />
+            {IconComponent && <IconComponent className={styles.timelineIcon} />}
             <Box className={styles.timelineContent}>
               <TimelineHeader activity={activity} />
             </Box>

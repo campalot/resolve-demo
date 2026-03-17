@@ -46,14 +46,6 @@
     flex: 1;
   }
 
-  &__header {
-
-  }
-
-  &__body {
-
-  }
-
   &__primary {
     &#{&} {
       font-size: 14px;
@@ -61,7 +53,7 @@
       font-weight: 500;
       margin-bottom: var(--space-xs);
     }
-}
+  }
 
   &__comment {
     &#{&} {
@@ -81,5 +73,50 @@
     font-size: 20px;
     line-height: 16px;
     padding: 0 2px;
+  }
+
+
+  /* The pulse animation */
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.4;
+    }
+
+    100% {
+      opacity: 1;
+    }
+  }
+
+    @mixin skeleton-base {
+      background-color: #e2e8f0; // A nice light gray/slate
+      border-radius: var(--radius-xs);
+      animation: pulse 1.5s infinite ease-in-out;
+      display: inline-block;
+    }
+
+  /* Specific shapes for your layout */
+  .timeline-icon-skeleton {
+    @include skeleton-base;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    /* Circle for the icon */
+  }
+
+  .skeleton-header {
+    @include skeleton-base;
+    width: 150px;
+    height: 16px;
+    margin-bottom: var(--space-sm);
+  }
+
+  .skeleton-body {
+    @include skeleton-base;
+    width: 100%;
+    height: 12px;
   }
 }
