@@ -32,17 +32,16 @@ export const Identities: React.FC = () => {
     [status, identityId, searchText],
   );
 
-  const appliedFilterCount =
-    (status?.length ?? 0) +
-    (searchText ? 1 : 0);
+  const appliedFilterCount = (status?.length ?? 0) + (searchText ? 1 : 0);
 
-  const { identities, total, previousTotal, loading, isSorting, error } =
-    useIdentities({
+  const { identities, total, loading, isChangingParams, error } = useIdentities(
+    {
       page,
       pageSize,
       filters,
       sortBy,
-    });
+    },
+  );
 
   function updateParams(
     next: Partial<Record<string, string | number | undefined>>,
@@ -69,7 +68,7 @@ export const Identities: React.FC = () => {
   return (
     <section className={styles.identities}>
       <h1 id="identities-table" tabIndex={-1}>
-        People ({loading ? previousTotal : total})
+        People ({total})
       </h1>
 
       <div className={styles.paginationBar}>
@@ -87,14 +86,13 @@ export const Identities: React.FC = () => {
         <Pagination
           page={page}
           pageSize={pageSize}
-          total={loading ? previousTotal : total}
+          total={total}
           onPageChange={(p) => updateParams({ page: p })}
           onPageSizeChange={(s) => updateParams({ pageSize: s, page: 1 })}
           isCards={true}
         />
         <div aria-live="polite" aria-atomic="true" className="sr-only">
-          Showing {loading ? previousTotal : total} results. Page {page} of{" "}
-          {Math.ceil(loading ? previousTotal / pageSize : total / pageSize)}.
+          Showing {total} results. Page {page} of {Math.ceil(total / pageSize)}.
         </div>
       </div>
 
@@ -111,7 +109,7 @@ export const Identities: React.FC = () => {
       {loading ? (
         <div className={styles.loadingMessage}>Loading identities...</div>
       ) : (
-        <IdentitiesList identities={identities} isSorting={isSorting} />
+        <IdentitiesList identities={identities} isSorting={isChangingParams} />
       )}
     </section>
   );

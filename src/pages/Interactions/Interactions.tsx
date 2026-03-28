@@ -46,13 +46,12 @@ export const Interactions: React.FC = () => {
     (startDate && endDate ? 1 : 0) +
     (searchQuery ? 1 : 0);
 
-  const { interactions, total, previousTotal, loading, error } =
-    useInteractions({
-      page,
-      pageSize,
-      filters,
-      sortBy,
-    });
+  const { interactions, total, loading, error } = useInteractions({
+    page,
+    pageSize,
+    filters,
+    sortBy,
+  });
 
   function updateParams(
     next: Partial<Record<string, string | number | undefined>>,
@@ -79,7 +78,7 @@ export const Interactions: React.FC = () => {
   return (
     <section className={styles.interactions}>
       <h1 id="interactions-table" tabIndex={-1}>
-        Interactions ({loading ? previousTotal : total})
+        Interactions ({total})
       </h1>
 
       <div className={styles.paginationBar}>
@@ -97,13 +96,13 @@ export const Interactions: React.FC = () => {
         <Pagination
           page={page}
           pageSize={pageSize}
-          total={loading ? previousTotal : total}
+          total={total}
           onPageChange={(p) => updateParams({ page: p })}
           onPageSizeChange={(s) => updateParams({ pageSize: s, page: 1 })}
         />
         <div aria-live="polite" aria-atomic="true" className="sr-only">
-          Showing {loading ? previousTotal : total} results. Page {page} of{" "}
-          {Math.ceil(loading ? previousTotal / pageSize : total / pageSize)}.
+          Showing {total} results. Page {page} of{" "}
+          {Math.ceil(total / pageSize)}.
         </div>
       </div>
 
