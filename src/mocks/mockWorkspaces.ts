@@ -1,4 +1,4 @@
-import type { Workspace } from "../graphql/types";
+import type { Workspace } from "../types/schema";
 import { capitalize } from "../helpers";
 
 const workspaceIds = ["alpha", "beta", "gamma"];

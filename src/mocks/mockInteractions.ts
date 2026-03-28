@@ -1,13 +1,13 @@
-import type { IdentityRecord } from "../graphql/types";
-import type { InteractionRecord } from "../graphql/types";
-import type { InteractionDataRecord } from "../graphql/types";
-import type { VendorOnboardingData } from "../graphql/types";
-import type { PolicyUpdateData } from "../graphql/types";
-import type { ContractData } from "../graphql/types";
-import type { ProposalData } from "../graphql/types";
-import type { InteractionType } from "../graphql/types";
-import { interactionStateValues } from "../graphql/types";
-import { interactionRoleValues } from "../graphql/types";
+import type { IdentityRecord } from "../types/api";
+import type { InteractionRecord } from "../types/api";
+import type { InteractionDataRecord } from "../types/schema";
+import type { VendorOnboardingData } from "../types/schema";
+import type { PolicyUpdateData } from "../types/schema";
+import type { ContractData } from "../types/schema";
+import type { ProposalData } from "../types/schema";
+import type { InteractionType } from "../types/schema";
+import { interactionStateValues } from "../types/schema";
+import { interactionRoleValues } from "../types/schema";
 import { pickOne } from "../helpers";
 
 

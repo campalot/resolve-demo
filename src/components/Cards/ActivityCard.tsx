@@ -1,5 +1,5 @@
 import styles from "./ActivityCard.module.scss";
-import type { InteractionActivityType } from "../../graphql/types";
+import type { InteractionActivityType } from "../../types/schema";
 import { toCamelCase } from "../../helpers";
 
 type ActivityCardProps = {

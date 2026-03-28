@@ -1,4 +1,4 @@
-import type { IdentityRecord } from "../graphql/types";
+import type { IdentityRecord } from "../types/api";
 import { getMockDb } from "./mockDB";
 
 // Helper to keep ID generation consistent across the app

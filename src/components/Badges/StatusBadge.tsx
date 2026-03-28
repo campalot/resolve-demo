@@ -1,6 +1,6 @@
 import React from "react";
 import type { HTMLAttributes } from "react";
-import type { InteractionState } from "../../graphql/types";
+import type { InteractionState } from "../../types/schema";
 import {
   ICON_MAP,
   StatusBadgeSize,

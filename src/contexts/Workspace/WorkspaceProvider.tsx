@@ -1,4 +1,4 @@
-import type { Workspace } from "../../graphql/types";
+import type { Workspace } from "../../types/schema";
 import { WorkspaceContext } from "./WorkspaceContext";
 
 type WorkspaceProviderProps = {
