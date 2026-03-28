@@ -19,5 +19,6 @@ export const INTERACTION_DETAILS = gql`
     creator
     createdAt
     updatedAt
+    __typename
   }
 `;

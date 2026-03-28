@@ -2,12 +2,12 @@ import { generateActivities } from "./mockActivities";
 import { generateInteractions } from "./mockInteractions";
 import { generateIdentities } from "./mockIdentities";
 import { generateWorkspaces } from "./mockWorkspaces";
-import type { IdentityRecord } from "../graphql/types";
-import type { InteractionActivityRecord } from "../graphql/types";
-import type { InteractionRecord } from "../graphql/types";
-import type { Workspace } from "../graphql/types";
-import { isSyncingVar } from "../api/cache";
+import type { IdentityRecord } from "../types/api";
+import type { InteractionActivityRecord } from "../types/api";
+import type { InteractionRecord } from "../types/api";
+import type { Workspace } from "../types/schema";
 import { throttle } from "lodash";
+import { useAppStore } from "../store/useAppStore";
 
 let instance: MockDbProps | null = null;
 const STORAGE_KEY = 'RESOLVE_DEMO_DB';
@@ -47,7 +47,7 @@ function generateMockDb(): MockDbProps {
 /**
  * Module-scoped mutable instance
  */
-let db: MockDbProps = generateMockDb();
+const db: MockDbProps = generateMockDb();
 
 /**
  * Getter used everywhere instead of importing object directly
@@ -56,12 +56,12 @@ export const getMockDb = () => {
   // If we already loaded it, don't do anything else
   if (instance) return instance;
 
-  // 2. The "Load-on-Boot" check
+  // The "Load-on-Boot" check
   const savedData = localStorage.getItem(STORAGE_KEY);
   
   if (savedData) {
     try {
-      // 3. Try to turn the string back into our DB object
+      // Try to turn the string back into our DB object
       instance = JSON.parse(savedData);
       console.log("📂 [DB] Hydrated from LocalStorage");
     } catch (e) {
@@ -87,18 +87,24 @@ export const getMockDb = () => {
  * Used in tests to reset state
  */
 export function resetMockDb(): void {
-  db = generateMockDb();
+  //db = generateMockDb();
+
+  instance = null; // This is the key. It clears the "Singleton"
+  // Clear localStorage so it doesn't hydrate the old data
+  if (typeof window !== 'undefined' && window.localStorage) {
+    localStorage.removeItem(STORAGE_KEY);
+  }
 }
 
 export const persistDb = throttle((data: MockDbProps) => {
-  isSyncingVar(true);
+  useAppStore.getState().setSyncing(true);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     // Small delay so the user actually sees the "Sync" happen
-    setTimeout(() => isSyncingVar(false), 500); 
+    setTimeout(() => useAppStore.getState().setSyncing(false), 500); 
     console.log("💾 [DB] Successfully saved to LocalStorage");
   } catch (e) {
-    isSyncingVar(false);
+    useAppStore.getState().setSyncing(false);
     console.error("❌ [DB] Persistence failed", e);
   }
 }, 1000, { leading: false, trailing: true });
