@@ -4,6 +4,7 @@ const COLORS = {
   storage: "#10b981",   // Emerald
   sideEffect: "#3b82f6", // Blue
   latency: "#64748b", // Gray
+  error: "#dc3545", // Error
 };
 
 let startTime: number | null = null;
@@ -20,6 +21,10 @@ export const backendLogger = {
     } else {
       console.warn(`%c[RBAC] ACCESS DENIED: '${role}' cannot perform '${action}'`, `color: ${COLORS.security}; font-weight: bold`);
     }
+  },
+
+  error: (msg: string) => {
+    console.log(`%c[Error] ${msg}`, `color: ${COLORS.error}; font-style: italic;`);
   },
 
   sideEffect: <T>(msg: string, data?: T) => {
