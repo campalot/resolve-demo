@@ -22,14 +22,27 @@ This document describes the architectural decisions and tradeoffs behind this de
 
 # High-Level Architecture
 
-This application is structured as a client-side React SPA with a mocked GraphQL backend. While the data layer is simulated, the overall architecture mirrors how a real enterprise application would be structured.
+This application is a client-side React SPA designed to be **backend-agnostic**.
+
+At runtime, the app can switch between:
+- GraphQL (Apollo Client + normalized cache)
+- REST (TanStack Query + document cache)
+
+This is controlled through a Developer HUD that allows the data strategy to be toggled at runtime.
+
+The key idea is simple:
+
+> The UI does not care where data comes from or how it is cached.
+
+All data access flows through shared hooks and a unified service layer, keeping components clean and predictable.
 
 Core principles:
 
 - Treat server state as external and authoritative  
-- Use the URL as the source of truth for view state where appropriate  
-- Keep data flow explicit and predictable  
+- Keep data access behind stable abstractions (hooks)  
+- Use the URL as the source of truth for view state  
 - Avoid global state unless there is a clear need  
+- Keep behavior consistent regardless of protocol  
 
 ---
 
@@ -50,52 +63,254 @@ The goal is not to simulate every possible business rule, but to model realistic
 
 ---
 
-# Data Layer
+# Data Layer & Protocol Strategy
 
-Apollo Client is used for GraphQL queries and mutations.
+The application uses a **protocol-agnostic data layer**.
 
-Rather than using static mocks, the application relies on a custom Apollo Link that simulates a backend execution layer. This allows the UI to interact with data as if it were server-driven while remaining fully self-contained.
+It supports two interchangeable strategies:
 
-The goal is to preserve realistic data flow, request/response boundaries, and mutation-driven updates without introducing an actual backend service.
+- **Apollo Client (GraphQL)**  
+  Uses a normalized cache with typePolicies for pagination, RBAC, and field behavior.
+
+- **TanStack Query + Axios (REST)**  
+  Uses a document-based cache with explicit query keys and manual invalidation.
+
+## The Goal
+
+Both strategies return the same *domain-shaped data* to the UI.
+
+The difference is purely in:
+- how data is fetched  
+- how it is cached  
+
+---
+
+## The “Traffic Controller” Hook
+
+Shared hooks (e.g. `useInteractionActivities`) act as the entry point for all data access.
+
+A small Zustand store tracks the active strategy. The hook checks that value and routes the request to either:
+
+- Apollo (GraphQL), or  
+- React Query (REST)
+
+From the component’s perspective, nothing changes.
+
+It just asks for data and renders it.
+
+---
+
+## Why This Exists
+
+This isn’t a typical production requirement, but it exists to demonstrate:
+
+- how different data strategies behave  
+- how to decouple UI from backend implementation  
+- how to keep data flow predictable across approaches  
+
+---
+
+# Project Structure & Source of Truth
+
+The UI never talks directly to a database or hardcoded data source.
+
+All data flows through a shared middle layer that is agnostic to the underlying protocol.
+
+---
+
+## API Layer (`src/api`)
+
+This is the core of the data system, split into three responsibilities:
+
+- **Endpoints**  
+  REST calls using TanStack Query + Axios (the “how” for REST)
+
+- **Mocks (MSW handlers)**  
+  Intercept both REST and GraphQL requests at the network level  
+  Both call the same underlying services
+
+- **Services**  
+  The “brain” of the app  
+  Handles filtering, sorting, pagination, and business rules
+
+**Key idea:**  
+Both REST and GraphQL resolve through the same service layer, so behavior stays consistent.
+
+---
+
+## GraphQL Layer (`src/graphql`)
+
+Contains queries, mutations, and fragments used by Apollo.
+
+This exists alongside REST endpoints rather than replacing them, allowing the app to switch between protocols without affecting the UI.
+
+---
+
+## Data Models (`src/types`)
+
+Data is intentionally split into two layers:
+
+- **API records (`api.ts`)**  
+  Flat, storage-oriented data (IDs, primitives)
+
+- **Domain entities (`schema.ts`)**  
+  Hydrated, UI-ready objects with resolved relationships
+
+The service layer is responsible for transforming records into domain entities.
+
+---
+
+## Why This Works
+
+- **Consistent behavior**  
+  Both protocols use the same service layer
+
+- **Test parity**  
+  Tests hit the same logic as the browser (via MSW)
+
+- **Backend flexibility**  
+  The mock layer can be replaced with a real backend without changing UI code
+
+---
+
+# Unified Mock Architecture (MSW)
+
+The application uses **MSW (Mock Service Worker)** as a unified network layer.
+
+Instead of mocking at the client level (e.g. Apollo Links), all requests are intercepted at the browser level.
+
+This applies to both:
+- GraphQL requests (Apollo)
+- REST requests (Axios)
+
+---
+
+## Why MSW
+
+- Requests appear in the Network tab (more realistic)
+- Works the same in browser and tests
+- Decouples mocking from any specific client (Apollo, Axios, etc.)
+
+---
+
+## Service-First Execution
+
+All business logic lives in shared service files (e.g. `interactionService.ts`).
+
+MSW handlers simply:
+
+1. Receive the request  
+2. Call the appropriate service  
+3. Return the result  
+
+Both REST and GraphQL handlers call the same service functions.
+
+This guarantees identical behavior regardless of protocol.
+
+---
+
+## Data Flow
+`UI → Hook → Apollo / React Query → MSW → Service Layer → Mock DB`
+
+---
+
+## Local Persistence
+
+The mock database is synced to `localStorage`.
+
+This allows:
+
+- state to persist across reloads  
+- consistent data between protocols  
+- deterministic test setup  
+
+---
+
+# Testing & Environment Reality
+
+One of the biggest strengths of this setup is that the Browser and the Test Suite are identical.
+
+- **MSW Everywhere:** We don't "fake" internal functions. In the browser, MSW intercepts network traffic for the demo. In our Vitest tests, we use msw/node to catch those same Axios/Apollo calls.
+- **Automatic Validation:** Because the tests hit the same handlers and logic as the browser, they act as a "smoke test." If you change a business rule in the code, the tests and the demo both update immediately.
+- **Defensive Design:** Since tests run incredibly fast, the service layer is built to handle rapid-fire actions. If a "Submit" button is clicked twice in a millisecond, the service recognizes the task is already "In Review" and just returns a success instead of crashing. This mimics how a high-quality production API handles real-world traffic.
 
 ---
 
 # Client Caching Strategy
 
-Apollo Client’s normalized cache is configured explicitly to control pagination, object shape stability, and reactive field derivation. The following diagram illustrates how the cache acts as a live logic layer—automatically recalculating UI permissions (RBAC) whenever global state changes without requiring a network refetch:
+This application intentionally supports **two different caching models**:
+
+| Aspect | Apollo Client | TanStack Query |
+|------|--------|------------|
+| Cache Type | Normalized | Document |
+| Granularity | Entity-level | Request-level |
+| Invalidation | Schema-aware | Query-key based |
+
+Rather than forcing a single approach, the app supports both.
 
 ```mermaid
 %%{init: {'theme': 'neutral', 'themeVariables': { 'primaryColor': '#f96'}}}%%
-graph LR
-    subgraph View ["View Layer"]
-        UI[React Components]
-        RoleVar((activeRoleVar))
+graph TD
+    subgraph UI_Layer [View Layer]
+        COMP[UI Components]
+        STRAT[Zustand: dataStrategy]
     end
 
-    subgraph Logic ["Execution Layer (Apollo Link)"]
-        Ops{Queries & Mutations}
-        Resolvers[resolveInteraction]
-        DB[(Mock DB / LocalStorage)]
-        
-        UI --> Ops
-        Ops --> Resolvers
-        Resolvers -->|Initial Perms| DB
+    subgraph Hooks [Unified Hook Layer]
+        UH[useInteractionActivities]
     end
 
-    subgraph Cache ["State & Reactivity"]
-        CacheStore[(Apollo Cache)]
-        Policy[Interaction TypePolicy]
-        
-        DB -->|Normalize| CacheStore
-        CacheStore --> Policy
-        RoleVar -.->|Trigger Re-calc| Policy
-        Policy -.->|permittedActions| UI
+    subgraph Providers [Protocol Strategy]
+        APO[Apollo Client / GQL]
+        TAN[TanStack Query / REST]
     end
 
-    style Resolvers fill:#f96,stroke:#333
-    style RoleVar fill:#bbf,stroke-dasharray: 5 5
-    style Policy fill:#f96,stroke:#333
+    subgraph Interceptor [MSW Network Proxy]
+        MSW[MSW Handlers]
+        SVC[Unified Services]
+        DB[(Mock DB)]
+    end
+
+    COMP --> UH
+    UH -- Read Strategy --> STRAT
+    UH -- Route to --> APO
+    UH -- Route to --> TAN
+    
+    APO --> MSW
+    TAN --> MSW
+    MSW --> SVC
+    SVC --> DB
 ```
+
+---
+
+## Shared Persistence (Key Detail)
+
+Both caching strategies are backed by `localStorage`.
+
+This ensures:
+
+- Data parity between Apollo and React Query  
+- Seamless switching between protocols  
+- No visible UI reset when toggling strategies  
+
+From the user’s perspective, the app behaves as if there is a single consistent backend.
+
+---
+
+## Important Distinction
+
+- Apollo acts like a **graph of entities**
+- React Query acts like a **set of cached responses**
+
+The architecture does not try to unify these internally.
+
+Instead, it ensures both produce the same **final data shape for the UI**.
+
+---
+
+## Apollo-specific enhancements (GraphQL mode only)
+
 > **Architectural Note: Reactive RBAC**
 > While `permittedActions` are initially calculated in the resolver, they are also defined in an Apollo `typePolicy` read function. This allows the UI to reactively re-calculate permissions when the `activeRoleVar` changes (e.g., via the Developer HUD) without requiring a refetch or a manual cache update.
 
@@ -112,48 +327,35 @@ These decisions ensure consistent object shapes and predictable list behavior ac
 
 ---
 
-# Mock Execution Layer
-
-The custom Apollo Link (`dynamicMockLink`) acts as a lightweight in-memory execution layer rather than a simple static mock.
-
-Instead of returning hard-coded responses, it:
-
-- Routes operations by `operationName`  
-- Applies filtering, sorting, and pagination based on query variables  
-- Resolves record types into GraphQL types  
-- Simulates network latency  
-- Updates in-memory state during mutations  
-- Persists state to localStorage via a throttled sync
-- Enforces Role-Based Access Control (RBAC) at the resolver level
-- Generates activity side effects when interactions transition  
-
-This mirrors how a real backend would shape and return data, while keeping the application fully self-contained.
-
 ## Record vs. Resolved Types
 
-The mock database stores plain record types (e.g., `IdentityRecord`, `InteractionRecord`). These records are projected into GraphQL-facing types using explicit resolver functions:
+The mock database stores plain record types (e.g., `IdentityRecord`, `InteractionRecord`).
 
-- `resolveIdentity`
-- `resolveInteraction`
-- `resolveInteractionActivity`
+These records are transformed into the richer domain objects used by the UI.
 
-The resolver layer is responsible for shaping stored data into the structure expected by the UI.
+This transformation layer is responsible for:
 
-Keeping these concerns separate avoids mixing storage details with view logic and makes data transformations easier to reason about.
+- Hydrating relationships (resolving IDs into full objects)  
+- Shaping data into UI-friendly structures  
+- Ensuring consistency across different parts of the app  
+
+Keeping storage models separate from UI-facing models avoids leaking persistence concerns into the component layer and keeps data transformations predictable.
 
 ## Contextual Projections
 
-Not all queries return identical identity shapes.
+Not all parts of the app need the same shape of data.
 
-For example, activity feeds use a reduced identity projection that omits fields such as `avatarUrl`. This mirrors realistic backend field selection behavior.
+For example, activity feeds use a reduced identity shape that omits fields like `avatarUrl`, while profile views return the full object.
 
-The mock execution layer shapes records per query context rather than exposing a single global object shape.
+Rather than exposing a single global object shape, the service layer returns **context-appropriate representations** based on how the data is being used.
 
-This allows:
+This mirrors how real APIs are often designed:
 
-- Profile views to receive full identity data  
-- Activity feeds to receive lightweight identity representations  
-- Different screens to request only what they need
+- Some endpoints return lightweight summaries  
+- Others return fully detailed objects  
+- Different screens request only what they need  
+
+This approach is applied consistently across both REST and GraphQL modes, so the UI receives the right level of detail without over-fetching or unnecessary data shaping in components.
 
 ## Mutation Side Effects
 
@@ -185,13 +387,19 @@ This approach keeps the demo realistic while preserving isolation and predictabi
 
 State is intentionally layered:
 
-- **Server state:** Apollo Client cache  
-- **Navigation and cross-page state:** URL parameters  
-- **Local UI state:** Component state (e.g., menus, modals, toggles)  
+- **Server state:**  
+  Apollo cache (GraphQL) or React Query cache (REST)
 
-Redux was considered but intentionally not included, as the current scope does not require global client state. Avoiding unnecessary global state keeps data ownership clear and reduces complexity.
+- **Navigation and cross-page state:**  
+  URL parameters  
 
----
+- **Protocol selection:**  
+  Zustand (Dev HUD toggle)
+
+- **Local UI state:**  
+  Component state (menus, modals, etc.)
+
+--- 
 
 # Routing & URL-Driven State
 
@@ -276,9 +484,9 @@ graph TD
         Check --> Click
     end
 
-    subgraph Data ["Data Layer (Apollo)"]
-        Vars["5. Variables: { status: [...] }"]
-        Query["6. executeQuery(vars)"]
+    subgraph Data ["Data Layer (Active Strategy)"]
+        Vars["5. Request params: { status: [...] }"]
+        Query["6. fetch data (REST or GraphQL)"]
     end
 
     %% The Circular Flow
@@ -327,9 +535,11 @@ Multi-select filters use repeated query parameters:
 ?partyId=123&partyId=456
 ```
 
-This keeps the URL readable and maps directly to GraphQL variables.
+This keeps the URL readable and maps cleanly to request parameters, whether that’s query variables (GraphQL) or query params (REST).
 
 Filter components receive options via props and read/write state via hooks. They do not derive options from results or own data-fetching logic.
+
+The filtering system is intentionally decoupled from the data-fetching layer. The URL drives the request shape, and each data strategy adapts that into its own format.
 
 ---
 
@@ -353,7 +563,9 @@ A custom pagination component is used instead of a UI library version to keep be
 
 ## Infinite Scroll (Dashboard & Global Search)
 
-Infinite scroll is used where pagination state does not need to persist in the URL. Both features utilize a **Cache-Driven Reactive Pattern** to ensure data consistency and UI performance.
+Infinite scroll is used where pagination state does not need to persist in the URL.
+
+This pattern relies on a cache-driven approach, where new pages are appended to existing results. The exact mechanism differs slightly between Apollo and React Query, but the behavior is consistent from the UI’s perspective.
 
 ```mermaid
 %%{init: {'theme': 'neutral', 'themeVariables': { 'primaryColor': '#f96'}}}%%
@@ -363,18 +575,18 @@ graph LR
         Trigger{Scroll Threshold}
     end
 
-    subgraph Apollo ["Apollo Client"]
-        FM[fetchMore]
+    subgraph DataLayer ["Data Layer (Active Strategy)"]
+        Fetch[fetch next page]
         Req1[[1. Initial Request: offset 0]]
-        Req2[[3. Scroll Request: offset 20]]
+        Req2[[3. Next Page Request: offset 20]]
         
         UI --> Req1
-        Trigger --> FM
-        FM --> Req2
+        Trigger --> Fetch
+        Fetch --> Req2
     end
 
-    subgraph Cache ["InMemoryCache (TypePolicy)"]
-        Merge{merge function}
+    subgraph Cache ["Client Cache"]
+        Merge{append/merge results}
         Data[( Results Array )]
 
         Req1 -->|"2. Fill [0...19]"| Merge
@@ -391,14 +603,24 @@ graph LR
 ```
 > *This indexed-merge strategy ensures that the UI is always a pure, reactive 'window' into the cache, separating the scroll-event logic from the data-rendering logic.*
 
-### Core Implementation:
+### Core Implementation
 
-- **GraphQL Offset + Limit**: Pagination is handled via standard offset/limit variables.
-- **Apollo Cache `typePolicies.merge`**: Results are never concatenated in local component state. Instead, the cache policy merges incoming results into the existing `results` array based on the `offset` argument.
-- **Reactive Hooks**: Components (e.g., `useSearchResults`) react to cache updates. This ensures that if search data is updated elsewhere, the UI stays in sync without manual refetching.
-- **Threshold Trigger**: A `handleScroll` listener triggers `fetchMore` when the user scrolls to within a specific threshold of the list bottom.
+- **Offset + Limit Pagination**  
+  Both strategies use standard offset/limit (or equivalent cursor-based patterns) to request additional pages.
 
-This pattern allows the list to grow "in place," naturally preserving scroll position and reducing the overhead of local state management.
+- **Cache-Level Merging**  
+  New results are merged into existing cached data rather than stored in local component state.
+
+  - In Apollo, this is handled via `typePolicies.merge`  
+  - In React Query, this is handled via `useInfiniteQuery` and page accumulation  
+
+- **Reactive Hooks**  
+  Components (e.g., `useSearchResults`) react to cache updates. As new data is fetched, the UI updates automatically without manual state management.
+
+- **Scroll Trigger**  
+  A scroll listener triggers the next page request when the user reaches a defined threshold.
+
+This pattern allows the list to grow "in place," preserving scroll position and avoiding the need for manual state concatenation in components.
 
 ---
 
@@ -483,9 +705,9 @@ Accessibility is addressed intentionally rather than retrofitted later.
 
 # Testing Strategy
 
-Testing focuses on user-visible behavior rather than implementation details. The goal is to verify that key workflows behave correctly across routing, workspace scoping, URL state, and status transitions.
+We focus on testing what the user actually sees and does. Instead of faking internal functions, we simulate the full stack to validate workflows across routing, workspace scoping, URL state, dual-protocol behavior, and status transitions.
 
-The project uses Vitest and React Testing Library, with a shared renderWithRouter helper that mirrors the real application structure (Apollo, routing, modal provider). The in-memory mock database is reset between tests so each test starts from a clean state and changes made in one test do not carry over into another.
+The project uses Vitest and React Testing Library. To keep things realistic, our renderWithRouter helper mirrors the real app setup—including Apollo, TanStack Query, routing, and our modal providers.
 
 Coverage prioritizes:
 
@@ -495,9 +717,12 @@ Coverage prioritizes:
 - Dashboard updates after mutations
 - Keyboard accessibility for buttons and modals
 
-Accessibility checks focus on real interaction patterns (keyboard navigation, modal behavior, semantic roles) rather than automated audit tools.
+## How we handle the "Full-Stack" feel:
 
-Testing does add some setup complexity — particularly around routing, Apollo caching, and workspace context — but the test architecture mirrors the production architecture rather than altering it for convenience.
+-  **Real Network Simulation:** We use MSW (Mock Service Worker) for both REST and GraphQL. This means the tests fire off the same REST and GraphQL requests used by the app, hitting our service logic just like it would in the browser.
+-  **Defensive Design:** Since tests run at high speed, the service layer is built to handle rapid-fire actions (like accidental double-clicks). This mirrors how we'd protect a real production API from getting hit with the same request twice.
+-  **Cache Synchronization:** We make sure the Apollo and TanStack caches are "seeded" during tests. This ensures that things like pagination and navigation stay predictable and don't show "stale" data or weird flashes during assertions.
+-  **Clean Slate:** To keep tests from leaking into each other, the in-memory mock database and localStorage are reset before every single test run.
 
 ---
 
@@ -515,18 +740,50 @@ These tradeoffs ensure the codebase remains readable and focused on the data-flo
 
 # Summary
 
-This project prioritizes realism, maintainability, and architectural clarity over novelty.
+This project prioritizes realism, clarity, and flexibility.
 
 It demonstrates:
 
-- URL-driven state management  
-- Multi-tenant workspace scoping  
-- Layered state strategy  
-- Clear separation of concerns  
-- Predictable data flow  
-- Responsive behavior  
-- Reusable component patterns  
-- Role-Based Access Control (RBAC): Actions are gated by an intersection of workflow state and user permissions.
-- Persistent Data Layer: Mock records are synchronized to localStorage to survive page refreshes.
+- **Protocol-Agnostic Data Flow**  
+  The app can run entirely on GraphQL (Apollo) or REST (React Query), with a runtime switch between the two.
 
-The goal is not just to show how features are built, but to demonstrate clear thinking behind architectural decisions.
+- **Decoupled UI Layer**  
+  Components consume stable data contracts and are not tied to any backend implementation.
+
+- **Unified Mock Infrastructure**  
+  MSW provides a single network layer for both browser and tests, backed by shared service logic.
+
+- **Dual Caching Strategies**  
+  Supports both normalized and document caching, with shared persistence via localStorage.
+
+- **URL-Driven State**  
+  Filters, pagination, and workspace context are all encoded in the URL.
+
+- **Realistic Domain Modeling**  
+  Entities, relationships, and workflows mirror production-style systems without unnecessary complexity.
+
+---
+
+# How to Demo This
+
+A quick way to walk through the architecture:
+
+1. Start in GraphQL mode (Apollo)
+2. Perform a few actions:
+   - Apply filters
+   - Scroll through results
+   - Trigger a mutation
+3. Open the Network tab to show GraphQL requests
+
+4. Switch to REST mode using the Developer HUD
+5. Repeat the same actions
+
+What to point out:
+
+- The UI does not change  
+- The data remains consistent (shared via localStorage)  
+- The network requests are different (REST vs GraphQL)  
+
+This demonstrates that the UI is fully decoupled from the data-fetching strategy.
+
+> Note: When switching data strategies, a brief loading state may appear. This reflects the fact that Apollo and React Query maintain independent caches, and the newly selected strategy performs its initial fetch. The UI remains consistent, and data parity is preserved via shared persistence.

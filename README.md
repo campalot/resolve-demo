@@ -1,24 +1,40 @@
 # Resolve — Workflow Architecture Demo
 
-A React + TypeScript + GraphQL application modeling workspace-scoped workflows, activity feeds, and URL-driven state.
+A React + TypeScript application demonstrating backend-agnostic data architecture.
 
-This project is intentionally architecture-focused. It demonstrates how complex UI behavior can be driven by explicit domain modeling rather than ad-hoc component logic.
+The app can switch at runtime between:
+- GraphQL (Apollo Client)
+- REST (TanStack Query)
+
+From the UI’s perspective, there is effectively a single data layer—the underlying protocol is an implementation detail.
+
+It models workspace-scoped workflows, activity feeds, and URL-driven state to simulate real-world application behavior.
+
+![App Screenshot](./docs/resolve1.jpg)
+
+*Runtime data strategy switching via Developer HUD (bottom-right) — UI remains consistent while network requests change.*
+
+### What you're seeing
+
+- Bottom-right: Dev HUD for switching data strategies  
+- Same UI, different network behavior (REST ↔ GraphQL)  
+- Workflow-driven data with persistent state  
 
 ## Live Demo
 
-A deployed version of the application is available here:
-
 🔗 https://resolve-demo.vercel.app/
 
-No authentication is required.  
-To model a realistic workflow, this demo uses a persistent execution layer. Rather than resetting on every refresh, the app synchronizes state to localStorage so that interaction updates and workflow changes are preserved between sessions.
+No authentication required.
+
+The app uses a persistent mock backend (via localStorage), so workflow changes and state updates are preserved across sessions.
 
 ## Developer Simulation Tools
-To facilitate architectural review, the application includes a Developer Overlay (bottom-right). This allows you to:
+The application includes a Developer Overlay (bottom-right) to make the architecture easy to explore. This allows you to:
 
 *  Toggle RBAC Roles: Instantly switch between Admin, Editor, and Viewer to see real-time, server-driven UI gating.
 *  Reset Database: Wipe the persistent localStorage and return the environment to its default mock records.
 *  Monitor Sync: Observe the background persistence heartbeat when mutations occur.
+*  Toggle Data Strategy: Switch between GraphQL and REST mid-session. The network tab updates while the UI remains consistent.
 
 ## Why This Project Exists
 
@@ -35,36 +51,40 @@ Those systems were proprietary and are no longer publicly accessible. Rather tha
 
 The goal is not to build a startup product mockup. The goal is to demonstrate architectural thinking in a controlled, readable codebase. This repository is intentionally architecture-focused rather than feature-heavy.
 
-No authentication is required. (the app uses a simulated execution layer with local persistence)
-
 ## TL;DR (For Reviewers)
 
-This is a multi-tenant React + Apollo SPA that models a realistic workflow system.
+This is a multi-tenant React SPA that demonstrates backend-agnostic data architecture.
 
-The URL drives navigational state (filters, pagination, workspace scoping).
-Server state lives in Apollo.
-Local UI state stays in components.
+Using the Developer HUD, the app can switch between:
+- GraphQL (Apollo Client)
+- REST (TanStack Query)
 
-A custom in-memory Apollo execution layer simulates backend behavior —
-mutations generate activity events, update derived stats, and trigger
-normalized cache updates.
+Both strategies share the same business logic, mock database, and persistence layer.
 
-The focus is architectural clarity and predictable data flow.
+Result: identical UI behavior across fundamentally different data-fetching approaches.
 
 ## What It Demonstrates
 
-- Multi-tenant workspace routing
+### Architecture
+- Backend-agnostic data layer (GraphQL + REST)
+- Unified service layer for business logic
+- API vs Domain type separation
+
+### Data & State
 - URL-driven filtering and pagination
-- Deterministic workflow state transitions (Draft → In Review → Approved / Rejected)
+- Deterministic workflow state transitions
 - Activity generation tied to mutations
-- Dashboard updates driven by normalized cache changes
-- Intentional Apollo cache configuration
-- Responsive layout with breakpoint-aware behavior
+- Cache-driven UI updates
+
+### UX & Behavior
+- Multi-tenant workspace routing
+- Responsive layout
 - Keyboard-accessible UI patterns
-- Integration-style testing with Vitest and React Testing Library
-- Role-Based Permissions: You can switch between Admin, Editor, or Viewer in the bottom-right menu to see how the app's buttons and actions change instantly based on your role.
-- Persistent Data: Any status updates or workflow changes are stored in your browser's localStorage.
-- Background Saving: I've set up the "save" to happen in the background (throttled) so the UI stays fast even when data is being written to disk.
+
+### Developer Experience
+- Runtime data strategy switching
+- Persistent mock data via localStorage
+- Integration-style testing with MSW
     
 
 ## Core Domain Model
@@ -84,21 +104,21 @@ The application models a small but connected domain:
     An event generated when interaction state changes occur.
     
 
-Interactions reference identities through structured party roles and reviewer relationships.Activities reference identities as actors and decision-makers, forming a lifecycle history across entities.
+Interactions reference identities through structured party roles and reviewer relationships. Activities reference identities as actors and decision-makers, forming a lifecycle history across entities.
 
 The domain is intentionally simple, but the relationships are modeled explicitly.
 
 ## Architectural Highlights
 
-This is a client-side React SPA backed by an in-memory GraphQL execution layer.
+This is a client-side React SPA with a unified service layer and network-level mocking via MSW.
 
 Key themes:
 
 *   The URL drives view state (filters, pagination, tab selection)
-*   Apollo Client manages server state through normalization
+*   Data strategies are interchangeable (Apollo or React Query)
 *   Workflow transitions generate activity records
-*   Cache policies explicitly control pagination and merging
-*   Domain logic lives in the execution layer, not UI components
+*   Cache behavior is explicitly controlled for pagination and merging
+*   Domain logic lives in the shared service layer
 *   Global state is avoided unless clearly necessary
 *   Smart Data Loading: When the app starts, it checks for saved data first; if nothing is found, it generates a fresh set of mock records.
 *   Reactive Permissions: I’ve configured the Apollo cache to re-calculate what you’re allowed to do the moment you switch roles in the Developer Overlay.
@@ -111,7 +131,9 @@ A detailed breakdown of architectural decisions is available here:
 
 ## Testing Strategy
 
-Testing focuses on user-visible behavior rather than implementation details.
+Testing focuses on full-stack simulation rather than implementation details.
+
+Unlike traditional mocks that stub out internal functions, this project uses MSW (Mock Service Worker) to intercept network traffic at the request level. This ensures that Vitest exercises the exact same Axios/Apollo calls, MSW Handlers, and Service Logic used in the live browser demo, achieving full environment parity.
 
 Coverage includes:
 
@@ -126,10 +148,12 @@ The in-memory execution layer allows realistic integration-style tests without s
 
 ## Tech Stack
 
-*   React 18
-*   TypeScript 
+*   React 18 & TypeScript
 *   React Router
-*   Apollo Client
+*   Apollo Client (GraphQL Strategy)
+*   TanStack Query & Axios (REST Strategy)
+*   MSW (Mock Service Worker) (Network Interception)
+*   Zustand (Global Strategy State)
 *   Vitest + React Testing Library
 *   SCSS Modules
 *   Vite
@@ -152,23 +176,32 @@ Run tests:
 ```bash
 npm run test  
 ```
+Backend-Agnostic Testing
+
+Since the application supports dual data strategies, the test suite is designed to be strategy-aware. You can run the full suite against either protocol to verify architectural parity:
+
+```bash
+# Run all tests using the GraphQL (Apollo) strategy
+npm run test:apollo
+
+# Run all tests using the REST (TanStack Query) strategy
+npm run test:tanstack
+
+# Run both in sequence to ensure 100% logic parity
+npm run test:all
+```
 
 ## Future Roadmap
 
 This project is an evolving architectural playground. Current planned evolutions include:
 
-*   Transactional Logging: Implementing a "System Journal" to the console to track mutation propagation and side-effects.
+*   Skeleton Loaders: Implement CSS-module based skeleton loaders for Identity and Interaction lists.
 *   Network Simulation: Adding latency and error-rate toggles to the Dev Overlay to test UI resilience under degraded conditions.
 
 ## Notes
 
 This project prioritizes architectural clarity over visual polish or backend infrastructure.
 
-The GraphQL layer is simulated using a custom Apollo Link that:
+The application uses MSW (Mock Service Worker) to simulate a backend at the network level. All requests—REST and GraphQL—are routed through a shared service layer that handles business logic, filtering, and mutations.
 
-*   Routes operations by name
-*   Applies filtering and pagination
-*   Generates activity side effects during mutations
-*   Maintains an in-memory database
-
-The result is a self-contained system that behaves like a backend-driven application while remaining easy to inspect and reason about.
+The result is a self-contained system that behaves like a real backend-driven application while remaining easy to inspect and reason about.
