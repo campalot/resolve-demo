@@ -1,16 +1,18 @@
 import React from "react";
-import { activeRoleVar } from "../../api/cache";
+import { useAppStore } from "../../store/useAppStore";
 import type { Role } from "../../api/cache";
-import { useReactiveVar } from "@apollo/client";
-import { isSyncingVar } from "../../api/cache";
 import styles from "./DevOverlay.module.scss";
+import type { DataStrategy } from "../../store/useAppStore";
 
 export const DevOverlay: React.FC = () => {
-  const currentRole = useReactiveVar(activeRoleVar);
-  const isSyncing = useReactiveVar(isSyncingVar);
+  const currentRole = useAppStore((state) => state.activeRole);
+  const isSyncing = useAppStore((state) => state.isSyncing);
+  const setRole = useAppStore((state) => state.setRole);
+  const dataStrategy = useAppStore((state) => state.dataStrategy);
+  const setDataStrategy = useAppStore((state) => state.setDataStrategy);
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    activeRoleVar(e.target.value as Role);
+    setRole(e.target.value as Role);
   };
 
   const handleReset = () => {
@@ -35,10 +37,22 @@ export const DevOverlay: React.FC = () => {
           <option value="Viewer">Viewer</option>
         </select>
 
+        <label htmlFor="strategy-switcher">Provider:</label>
+        <select
+          id="strategy-switcher"
+          value={dataStrategy}
+          onChange={(e) => setDataStrategy(e.target.value as DataStrategy)}
+        >
+          <option value="APOLLO">Apollo (GQL)</option>
+          <option value="TANSTACK">TanStack (REST)</option>
+        </select>
+
         <button onClick={handleReset} className={styles.resetBtn}>
           Reset DB
         </button>
-        <span className={`${styles.statusDot} ${isSyncing ? styles.isSyncing : ""}`} />
+        <span
+          className={`${styles.statusDot} ${isSyncing ? styles.isSyncing : ""}`}
+        />
       </div>
     </div>
   );
