@@ -1,46 +1,29 @@
+import { useAppStore } from "../store/useAppStore";
+import { useIdentitiesApollo } from "./apollo/useIdentitiesApollo";
+import { useIdentitiesTanStack } from "./tanstack/useIdentitiesTanStack";
+import type { IdentityFilters } from "../types/api";
 
-import { useQuery } from "@apollo/client";
-import { GET_IDENTITIES } from "../graphql/queries/getIdentities";
-import type { IdentityFilters } from "../graphql/types";
-import { useWorkspace } from "../contexts/Workspace/WorkspaceContext";
-
-export function useIdentities({
-  filters, 
-  sortBy = "name",
-  page = 1,
-  pageSize = 12,
-}: {
+export type IdentitiesListProps = {
   filters: IdentityFilters, 
   sortBy?: string,
   page: number;
   pageSize: number;
-}) {
-  const workspace = useWorkspace();
-  const offset = (page - 1) * pageSize;
-  const { data, previousData, error, networkStatus } = useQuery(GET_IDENTITIES, {
-      variables: {
-        offset,
-        limit: pageSize,
-        filters,
-        sortBy,
-        workspaceId: workspace.id,
-      },
-      fetchPolicy: 'cache-and-network',
-      notifyOnNetworkStatusChange: true,
-    });
+}
 
+export function useIdentities(params: IdentitiesListProps) {
+  const strategy = useAppStore((state) => state.dataStrategy);
 
-  const loading = networkStatus === 1 && !data;
-  const activeData = data || previousData;
+  // 1. Call both, but only "enable" the active one
+  const apolloResult = useIdentitiesApollo({
+    ...params,
+    skip: strategy !== 'APOLLO' // Standard Apollo skip
+  });
 
-  return {
-    identities: activeData?.identities.results ?? [],
-    total: activeData?.identities.pageInfo.total ?? 0,
-    previousTotal: previousData?.identities.pageInfo.total ?? 0,
-    loading,
-    isRefetching: networkStatus === 4,
-    isSorting: networkStatus === 2,
-    error,
-  };
+  const tanstackResult = useIdentitiesTanStack({
+    ...params,
+    enabled: strategy === 'TANSTACK' // Standard TanStack enabled
+  });
 
+  // 2. Return the data from the active one
+  return strategy === 'APOLLO' ? apolloResult : tanstackResult;
 }

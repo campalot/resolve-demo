@@ -1,35 +1,13 @@
-import { useQuery } from "@apollo/client";
-import { GET_INTERACTION } from "../graphql/queries/getInteraction";
-import { useWorkspace } from "../contexts/Workspace/WorkspaceContext";
-import type { Interaction } from "../graphql/types";
+import { useInteractionApollo } from "./apollo/useInteractionApollo";
+import { useInteractionTanStack } from "./tanstack/useInteractionTanStack";
+import { useAppStore } from "../store/useAppStore";
 
-type GetInteractionData = {
-  interaction: Interaction;
-};
+export function useInteraction(id: string) {
+  const strategy = useAppStore((state) => state.dataStrategy);
 
-type GetInteractionVars = {
-  workspaceId: string;
-  interactionId: string;
-};
+  // Call both with the 'enabled/skip' pattern
+  const apollo = useInteractionApollo(id, { skip: strategy !== 'APOLLO'});
+  const tanstack = useInteractionTanStack(id, { enabled: strategy === 'TANSTACK'});
 
-export function useInteraction(interactionId?: string) {
-  const workspace = useWorkspace();
-  const { data, loading, error } = useQuery<
-    GetInteractionData,
-    GetInteractionVars
-  >(GET_INTERACTION, {
-    variables: {
-      workspaceId: workspace.id,
-      interactionId: interactionId ?? "",
-    },
-    skip: !interactionId,
-  });
-
-  return {
-    interaction: data?.interaction ?? null,
-    loading,
-    error,
-    hasId: Boolean(interactionId),
-  };
+  return strategy === 'APOLLO' ? apollo : tanstack;
 }
-

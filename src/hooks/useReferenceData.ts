@@ -1,16 +1,16 @@
 import { useAppStore } from "../store/useAppStore";
-import { useWorkspacesApollo } from "./apollo/useWorkspacesApollo";
-import { useWorkspacesTanStack } from "./tanstack/useWorkspacesTanStack";
+import { useReferenceDataApollo } from "./apollo/useReferenceDataApollo";
+import { useReferenceDataTanStack } from "./tanstack/useReferenceDataTanStack";
 
-export function useWorkspacesList() {
+export function useReferenceData() {
   const strategy = useAppStore((state) => state.dataStrategy);
 
   // 1. Call both, but only "enable" the active one
-    const apolloResult = useWorkspacesApollo({
+    const apolloResult = useReferenceDataApollo({
       skip: strategy !== 'APOLLO' // Standard Apollo skip
     });
   
-    const tanstackResult = useWorkspacesTanStack({
+    const tanstackResult = useReferenceDataTanStack({
       enabled: strategy === 'TANSTACK' // Standard TanStack enabled
     });
   
