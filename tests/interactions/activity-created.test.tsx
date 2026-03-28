@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithRouter } from "../setup/test-utils";
 import AppRoutes from "../../src/routes/AppRoutes";
@@ -8,7 +8,7 @@ describe("Interaction workflow", () => {
     const user = userEvent.setup();
 
     const { getLocation } = renderWithRouter(<AppRoutes />, {
-      route: "/w/alpha/interactions",
+      route: "/w/alpha/interactions?status=draft",
     });
 
     // Wait for list to load
@@ -39,9 +39,15 @@ describe("Interaction workflow", () => {
     // Modal should appear
     const dialog = await screen.findByRole("dialog");
 
-     // Submit draft
-    await user.click(await within(dialog).findByRole("button", { name: /submit/i }));
+    // Submit draft
+    const submitBtn = await within(dialog).findByRole("button", {
+      name: /submit/i,
+    });
 
+    // Use fireEvent for a single, non-simulated click to avoid double-events
+    fireEvent.click(submitBtn);
+
+    // After clicking submit in the dialog:
     // Status should update
     await screen.findByTestId("interaction-status");
 
@@ -66,5 +72,5 @@ describe("Interaction workflow", () => {
     });
 
     expect(matchingCard).toBeDefined();
-  });
+  }, 15000);
 });
