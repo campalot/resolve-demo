@@ -335,9 +335,7 @@ export const GlobalSearchAppBar: React.FC<GlobalSearchAppBarProps> = ({
                                         </span>
                                         <span>
                                           {dayjs(
-                                            new Date(
-                                              (option as Interaction).updatedAt,
-                                            ),
+                                            (option as Interaction).updatedAt,
                                           ).fromNow()}
                                         </span>
                                       </React.Fragment>
