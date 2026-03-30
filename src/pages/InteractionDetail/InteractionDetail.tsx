@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   useParams,
   Navigate,
-  useLocation,
   useNavigate,
 } from "react-router-dom";
 import { useAppStore } from "../../store/useAppStore";
@@ -142,8 +141,6 @@ const TransitionModalContent: React.FC<TransitionModalContentProps> = ({
 
 export const InteractionDetail: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [value, setValue] = useState(location.pathname);
   const workspace = useWorkspace();
   const currentRole = useAppStore((state) => state.activeRole);
 
@@ -195,9 +192,7 @@ export const InteractionDetail: React.FC = () => {
   };
 
   const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
-    // Update the state for the MUI component and navigate
-    setValue(newValue);
-    navigate(newValue);
+    navigate(workspacePath(`interactions/${interactionId}/${newValue}`));
   };
 
   const TAB_PATHS = new Set(TABS.map((tab) => tab.path));
@@ -238,7 +233,8 @@ export const InteractionDetail: React.FC = () => {
         <Box className={styles.interactionDetailBody}>
           <Box className={styles.interactionDetailMain}>
             <Tabs
-              value={value}
+              //value={value}
+              value={tabId}
               onChange={handleChange}
               role="navigation"
               aria-label="Interaction navigation tabs"
@@ -247,9 +243,7 @@ export const InteractionDetail: React.FC = () => {
               {TABS.map((tab) => (
                 <Tab
                   key={tab.label}
-                  value={workspacePath(
-                    `interactions/${interactionId}/${tab.path}`,
-                  )}
+                  value={tab.path}
                   label={tab.label}
                 />
               ))}

@@ -70,8 +70,7 @@ export const SearchResultRow: React.FC<SearchResultRowProps> = ({
                   {(result as Interaction).parties?.[0]?.identity?.name}
                 </span>
                 <span className={styles.meta}>
-                  Updated{" "}
-                  {dayjs(new Date((result as Interaction).updatedAt)).fromNow()}
+                  Updated {dayjs((result as Interaction).updatedAt).fromNow()}
                 </span>
               </>
             )}
