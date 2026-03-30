@@ -4,11 +4,8 @@ import App from "./App";
 import "./styles/base.scss";
 
 async function enableMocking() {
-  // Only enable in development
-  if (import.meta.env.MODE !== "development") {
-    return;
-  }
-
+  // MSW runs in all environments because this app has no real backend.
+  // It simulates both REST and GraphQL APIs at the network level.
   const { worker } = await import("./api/mocks/browser");
 
   return worker.start({
