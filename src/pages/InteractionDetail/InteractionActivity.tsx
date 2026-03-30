@@ -5,7 +5,7 @@ import { Box } from "@mui/material";
 import { TimelineHeader } from "./TimelineHeader";
 import styles from "./InteractionActivity.module.scss";
 import { getActivityIcon } from "../../components/Badges/helpers";
-import type { InteractionActivity as InteractionActivityType } from "../../graphql/types";
+import type { InteractionActivity as InteractionActivityType } from "../../types/schema";
 
 export interface ClientActivity extends InteractionActivityType {
   isOptimistic?: boolean;

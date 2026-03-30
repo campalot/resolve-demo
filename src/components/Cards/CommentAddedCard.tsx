@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import type {
-  InteractionActivity,
-  InteractionActivityMetadata_Comment,
-} from "../../graphql/types";
+import type { InteractionActivity } from "../../types/schema";
+import type { InteractionActivityMetadata_Comment } from "../../types/schema";
 import { ActivityCard } from "./ActivityCard";
 import { formatRelative } from "../../helpers";
 import styles from "./CommentAddedCard.module.scss";

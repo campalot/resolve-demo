@@ -1,5 +1,5 @@
 import React from "react";
-import type { Interaction } from "../../graphql/types";
+import type { Interaction } from "../../types/schema";
 import styles from "./InteractionSidebar.module.scss";
 import { Box } from "@mui/material";
 import { StageCard } from "./Sidebar/StageCard";

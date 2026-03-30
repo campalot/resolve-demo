@@ -1,11 +1,11 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import type { Interaction } from "../../graphql/types";
+import type { Interaction } from "../../types/schema";
 import { MetadataRow } from "./common/MetadataRow";
-import type { VendorOnboardingData } from "../../graphql/types";
-import type { PolicyUpdateData } from "../../graphql/types";
-import type { ContractData } from "../../graphql/types";
-import type { ProposalData } from "../../graphql/types";
+import type { VendorOnboardingData } from "../../types/schema";
+import type { PolicyUpdateData } from "../../types/schema";
+import type { ContractData } from "../../types/schema";
+import type { ProposalData } from "../../types/schema";
 import styles from "./Sidebar/SidebarCard.module.scss";
 import overViewStyles from "./InteractionOverview.module.scss";
 

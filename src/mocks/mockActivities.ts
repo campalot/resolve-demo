@@ -1,13 +1,15 @@
-import { ACTION_TO_STATUS, WORKFLOW } from "../graphql/types";
+import { ACTION_TO_STATUS, WORKFLOW } from "../types/schema";
 import type { 
-  IdentityRecord, 
   InteractionAction, 
-  InteractionActivityRecord, 
-  InteractionPartyRecord, 
-  InteractionRecord, 
   InteractionRole, 
   InteractionState, 
-} from "../graphql/types";
+} from "../types/schema";
+import type { 
+  InteractionActivityRecord,
+  InteractionRecord,
+  InteractionPartyRecord,
+  IdentityRecord,
+ } from "../types/api";
 import { generateRandomDateStringPriorTo, getRandomDate, getRandomInteger, pickOne } from "../helpers";
 import { getMockDb } from "./mockDB";
 
@@ -63,7 +65,7 @@ function pickActorFromInteraction(
     : undefined;
 }
 
-function createInteractionCreatedActivity(
+export function createInteractionCreatedActivity(
   workspaceId: string,
   interaction: InteractionRecord,
   identities: IdentityRecord[]
@@ -87,7 +89,7 @@ function createInteractionCreatedActivity(
   };
 }
 
-function createStatusChangedActivity(
+export function createStatusChangedActivity(
   workspaceId: string,
   interaction: InteractionRecord,
   previousStatus: InteractionState,
@@ -116,7 +118,7 @@ function createStatusChangedActivity(
   };
 }
 
-function createReviewerAssignedActivity(
+export function createReviewerAssignedActivity(
   workspaceId: string,
   interaction: InteractionRecord,
   reviewer: IdentityRecord,
@@ -146,7 +148,7 @@ function createReviewerAssignedActivity(
   };
 }
 
-function createDecisionActivity(
+export function createDecisionActivity(
   workspaceId: string,
   interaction: InteractionRecord,
   decisionMaker: IdentityRecord,
@@ -175,7 +177,7 @@ function createDecisionActivity(
   };
 }
 
-function createCommentAddedActivity(
+export function createCommentAddedActivity(
   workspaceId: string,
   interaction: InteractionRecord,
   identities: IdentityRecord[],

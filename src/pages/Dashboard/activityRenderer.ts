@@ -1,4 +1,5 @@
-import type { InteractionActivity, InteractionActivityType } from "../../graphql/types";
+import type { InteractionActivity } from "../../types/schema";
+import type { InteractionActivityType } from "../../types/schema";
 import { StatusChangeCard } from "../../components/Cards/StatusChangeCard";
 import { CommentAddedCard } from "../../components/Cards/CommentAddedCard";
 import { ReviewerAssignedCard } from "../../components/Cards/ReviewerAssignedCard";

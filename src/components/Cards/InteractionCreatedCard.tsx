@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import type { InteractionActivity } from "../../graphql/types";
+import type { InteractionActivity } from "../../types/schema";
 import { ActivityCard } from "./ActivityCard";
 import StatusBadge from "../Badges/StatusBadge";
 import { formatRelative } from "../../helpers";

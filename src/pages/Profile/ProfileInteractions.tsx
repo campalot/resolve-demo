@@ -1,6 +1,6 @@
 import React from "react";
 import { InteractionsList } from "../Interactions/InteractionsList";
-import type { Interaction } from "../../graphql/types";
+import type { Interaction } from "../../types/schema";
 
 type ProfileInteractionsProps = {
   interactions: Interaction[];

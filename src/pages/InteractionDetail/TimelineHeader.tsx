@@ -2,12 +2,12 @@ import React from "react";
 import type { ReactNode } from "react";
 import { StatusBadgeSize } from "../../components/Badges/helpers";
 import styles from "./InteractionActivity.module.scss";
-import type { InteractionActivity } from "../../graphql/types";
-import type { InteractionActivityMetadata_Decision } from "../../graphql/types";
-import type { InteractionActivityMetadata_Comment } from "../../graphql/types";
-import type { InteractionActivityMetadata_Reviewer } from "../../graphql/types";
-import type { InteractionActivityMetadata_Status } from "../../graphql/types";
-import type { InteractionActivityType } from "../../graphql/types";
+import type { InteractionActivity } from "../../types/schema";
+import type { InteractionActivityMetadata_Decision } from "../../types/schema";
+import type { InteractionActivityMetadata_Comment } from "../../types/schema";
+import type { InteractionActivityMetadata_Reviewer } from "../../types/schema";
+import type { InteractionActivityMetadata_Status } from "../../types/schema";
+import type { InteractionActivityType } from "../../types/schema";
 import { Typography } from "@mui/material";
 import StatusBadge from "../../components/Badges/StatusBadge";
 

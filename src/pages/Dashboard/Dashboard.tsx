@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import type { InteractionActivity } from "../../graphql/types";
+import type { InteractionActivity } from "../../types/schema";
 import { useInteractionActivities } from "../../hooks/useInteractionActivities";
 import { activityRenderers } from "./activityRenderer";
 import styles from "./Dashboard.module.scss";
@@ -8,16 +8,23 @@ export const Dashboard: React.FC = () => {
   const feedRef = useRef<HTMLDivElement>(null);
   // At the bottom of the list
   const sentinelRef = useRef(null);
-  const { results, loading, error, hasMore, fetchNextPage } =
-    useInteractionActivities({
-      filters: {},
-    });
+  const {
+    results,
+    loading,
+    error,
+    hasMore,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInteractionActivities({
+    filters: {},
+  });
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         // entries[0] is the sentinel <li>
-        if (entries[0].isIntersecting && hasMore && !loading) {
+        // Check isFetchingNextPage to prevent double-firing
+        if (entries[0].isIntersecting && hasMore && !isFetchingNextPage) {
           fetchNextPage();
         }
       },
@@ -37,13 +44,10 @@ export const Dashboard: React.FC = () => {
     }
 
     return () => observer.disconnect();
-  }, [hasMore, loading, fetchNextPage]);
+  }, [hasMore, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div
-      ref={feedRef}
-      className={styles.dashboardFeed}
-    >
+    <div ref={feedRef} className={styles.dashboardFeed}>
       <h1>Activity</h1>
       <ul role="feed" aria-busy={loading} className={styles.dashboardList}>
         {results.map((activity: InteractionActivity) => {

@@ -1,24 +1,21 @@
-import { useQuery } from "@apollo/client";
-import { GET_PROFILE } from "../graphql/queries/getProfile";
-import { useWorkspace } from "../contexts/Workspace/WorkspaceContext";
+import { useAppStore } from '../store/useAppStore';
+import { useProfileApollo } from './apollo/useProfileApollo';
+import { useProfileTanStack } from './tanstack/useProfileTanStack';
 
 export function useProfile(identityId?: string) {
-  const workspace = useWorkspace();
-  const { data, loading, error } = useQuery(GET_PROFILE, {
-      variables: {
-        workspaceId: workspace.id,
-        identityId: identityId ?? "",
-      },
-      fetchPolicy: "cache-and-network",
-      skip: !identityId,
-    });
+  const strategy = useAppStore((state) => state.dataStrategy);
 
-  return {
-    identity: data?.identity ?? null,
-    interactions: data?.interactionsByIdentity ?? [],
-    activities: data?.activityByActor ?? [],
-    loading,
-    error,
-  };
+  // 1. Call both, but only "enable" the active one
+  const apolloResult = useProfileApollo({
+    identityId,
+    skip: strategy !== 'APOLLO' // Standard Apollo skip
+  });
 
+  const tanstackResult = useProfileTanStack({
+    identityId,
+    enabled: strategy === 'TANSTACK' // Standard TanStack enabled
+  });
+
+  // 2. Return the data from the active one
+  return strategy === 'APOLLO' ? apolloResult : tanstackResult;
 }

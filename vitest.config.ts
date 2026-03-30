@@ -8,5 +8,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './tests/setup/vitest.setup.ts',
+    environmentOptions: {
+      jsdom: {
+        url: 'http://localhost:3000', // Must match test baseURL
+      },
+    },
   },
 });

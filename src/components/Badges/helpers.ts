@@ -1,5 +1,5 @@
-import type { InteractionActivity } from "../../graphql/types";
-import type { InteractionActivityMetadata_Decision } from "../../graphql/types";
+import type { InteractionActivity } from "../../types/schema";
+import type { InteractionActivityMetadata_Decision } from "../../types/schema";
 import IconApproved from "../../assets/approved-aproved-confirm-2-svgrepo-com.svg?react";
 import IconDenied from "../../assets/denied-svgrepo-com.svg?react";
 import IconPending from "../../assets/pending-svgrepo-com.svg?react";
@@ -10,7 +10,7 @@ import IconComment from "../../assets/comment-text-svgrepo-com.svg?react";
 import IconPlus from "../../assets/plus-circle-fill-svgrepo-com.svg?react";
 import IconPerson from "../../assets/person-fill-svgrepo-com.svg?react";
 import IconStatusChange from "../../assets/pending-filled-svgrepo-com.svg?react";
-import type { InteractionState } from "../../graphql/types";
+import type { InteractionState } from "../../types/schema";
 import { capitalize, toCamelCase } from "../../helpers";
 
 export type SvgIconComponent = React.FC<React.SVGProps<SVGSVGElement>>;

@@ -4,7 +4,8 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Avatar from "../../components/Avatars/Avatar";
 import StatusBadge from "../../components/Badges/StatusBadge";
-import type { Interaction, SearchResult } from "../../graphql/types";
+import type { SearchResult } from "../../types/schema";
+import type { Interaction } from "../../types/schema";
 dayjs.extend(relativeTime);
 
 type SearchResultRowProps = {

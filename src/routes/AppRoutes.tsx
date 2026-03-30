@@ -1,35 +1,58 @@
-import React from "react";
-import {
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { AppLayout } from "../layouts/AppLayout";
-import { Dashboard } from "../pages/Dashboard/Dashboard";
-import { Interactions } from "../pages/Interactions/Interactions";
-import { InteractionDetail } from "../pages/InteractionDetail/InteractionDetail";
-import { Profile } from "../pages/Profile/Profile";
-import { Identities } from "../pages/Identities/Identities";
-import { MobileSearchPage } from "../pages/Search/MobileSearchPage";
-import { NotFound } from "../pages/NotFound";
-import { InteractionsReferenceDataProvider } from "../contexts/InteractionReferenceData/InteractionsReferenceDataProvider";
-import { WorkspaceRouteBoundary } from "./WorkspaceRouteBoundary";
+import React, { lazy } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-const DEFAULT_WORKSPACE_ID = "alpha";
+// Keep these static as they define the shell/context of the app
+import { AppLayout } from "../layouts/AppLayout";
+import { WorkspaceRouteBoundary } from "./WorkspaceRouteBoundary";
+import { InteractionsReferenceDataProvider } from "../contexts/InteractionReferenceData/InteractionsReferenceDataProvider";
+
+
+// Lazy Load Named Exports
+const Dashboard = lazy(() =>
+  import("../pages/Dashboard/Dashboard").then((m) => ({
+    default: m.Dashboard,
+  })),
+);
+const Interactions = lazy(() =>
+  import("../pages/Interactions/Interactions").then((m) => ({
+    default: m.Interactions,
+  })),
+);
+const InteractionDetail = lazy(() =>
+  import("../pages/InteractionDetail/InteractionDetail").then((m) => ({
+    default: m.InteractionDetail,
+  })),
+);
+const Profile = lazy(() =>
+  import("../pages/Profile/Profile").then((m) => ({ default: m.Profile })),
+);
+const Identities = lazy(() =>
+  import("../pages/Identities/Identities").then((m) => ({
+    default: m.Identities,
+  })),
+);
+const MobileSearchPage = lazy(() =>
+  import("../pages/Search/MobileSearchPage").then((m) => ({
+    default: m.MobileSearchPage,
+  })),
+);
+const NotFound = lazy(() =>
+  import("../pages/NotFound").then((m) => ({ default: m.NotFound })),
+);
+
+export const DEFAULT_WORKSPACE_ID = "alpha";
 
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* Root redirect */}
       <Route
         path="/"
         element={
           <Navigate to={`/w/${DEFAULT_WORKSPACE_ID}/dashboard`} replace />
         }
       />
-      {/* Workspace-scoped app */}
+
       <Route path="/w/:workspaceId" element={<WorkspaceRouteBoundary />}>
-        {/* Full shell only exists inside workspace */}
         <Route element={<AppLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -50,15 +73,12 @@ const AppRoutes: React.FC = () => {
             element={<InteractionDetail />}
           />
 
-          {/* Workspace-level 404 */}
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        {/* Full-screen search outside layout */}
         <Route path="search" element={<MobileSearchPage />} />
       </Route>
 
-      {/* Global catch-all redirect */}
       <Route
         path="*"
         element={

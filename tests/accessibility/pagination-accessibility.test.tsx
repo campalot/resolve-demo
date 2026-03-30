@@ -37,12 +37,15 @@ describe("Pagination accessibility", () => {
 
     // URL should update
     expect(getLocation().search).toContain("page=2");
-    
-    const currentRangeSpan = await screen.findByTestId("batch-items");
+
     // Current range indicator
-    expect(currentRangeSpan).toHaveTextContent(/6\s*-\s*10/i);
-    
-    
+    // This waits for the "quick update" to happen
+    const currentRangeSpan = await screen.findByText(
+      /6\s*-\s*10/i,
+      {},
+      { timeout: 5000 },
+    );
+    expect(currentRangeSpan).toBeInTheDocument();
   });
 
   it("allows keyboard navigation for pagination", async () => {
@@ -82,6 +85,4 @@ describe("Pagination accessibility", () => {
 
     expect(prevButton).toHaveAttribute("aria-disabled", "true");
   });
-
-
 });

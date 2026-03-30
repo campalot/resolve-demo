@@ -17,14 +17,14 @@ export const GET_PROFILE = gql`
     }
   }
 
-  interactionsByIdentity(
+  interactions(
     workspaceId: $workspaceId,
     identityId: $identityId
   ) {
     ...InteractionDetails
   }
 
-  activityByActor(
+  activities(
     workspaceId: $workspaceId,
     actorId: $identityId
   ) {

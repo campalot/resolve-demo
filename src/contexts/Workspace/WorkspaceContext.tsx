@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Workspace } from "../../graphql/types";
+import type { Workspace } from "../../types/schema";
 
 type WorkspaceContextValue = {
   workspace: Workspace;

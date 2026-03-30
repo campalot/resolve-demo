@@ -1,16 +1,19 @@
-
-import { useQuery } from "@apollo/client";
-import { GET_WORKSPACES } from "../graphql/queries/getWorkspaces";
+import { useAppStore } from "../store/useAppStore";
+import { useWorkspacesApollo } from "./apollo/useWorkspacesApollo";
+import { useWorkspacesTanStack } from "./tanstack/useWorkspacesTanStack";
 
 export function useWorkspacesList() {
-  const { data, loading, error } = useQuery(GET_WORKSPACES, {
-    fetchPolicy: 'cache-first',
-  });
+  const strategy = useAppStore((state) => state.dataStrategy);
 
-  return {
-    workspaces: data?.workspaces ?? [],
-    loading,
-    error,
-  };
-
-}
+  // 1. Call both, but only "enable" the active one
+    const apolloResult = useWorkspacesApollo({
+      skip: strategy !== 'APOLLO' // Standard Apollo skip
+    });
+  
+    const tanstackResult = useWorkspacesTanStack({
+      enabled: strategy === 'TANSTACK' // Standard TanStack enabled
+    });
+  
+    // 2. Return the data from the active one
+    return strategy === 'APOLLO' ? apolloResult : tanstackResult;
+  }

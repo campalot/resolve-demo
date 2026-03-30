@@ -1,32 +1,27 @@
-import { useQuery } from "@apollo/client";
-import { GET_SEARCH_RESULTS } from "../graphql/queries/getSearchResults";
-import type { SearchResult } from "../graphql/types";
-import { useWorkspace } from "../contexts/Workspace/WorkspaceContext";
+import { useAppStore } from '../store/useAppStore';
+import { useSearchApollo } from './apollo/useSearchApollo';
+import { useSearchTanStack } from './tanstack/useSearchTanStack';
 
 export function useSearchResults(queryString: string, limit: number = 10) {
-  const { id: workspaceId } = useWorkspace();
-
-  const { data, loading, error, fetchMore } = useQuery(GET_SEARCH_RESULTS, {
-    variables: { workspaceId, queryString, offset: 0, limit },
-    skip: !queryString,
-    notifyOnNetworkStatusChange: true,
-  });
-
-  const results: SearchResult[] = data?.search?.results ?? [];
-  const hasMore: boolean = data?.search?.pageInfo?.hasMore ?? false;
-
-  const fetchNextPage = () => {
-    // Only fetch if we aren't already loading and there's more data
-    if (!loading && hasMore) {
-      fetchMore({
-        variables: {
-          // Use the actual current length of the results array for the next offset
-          offset: results.length,
-        },
-      });
-    }
-  };
-
-  return { results, loading, error, hasMore, fetchNextPage };
+  const strategy = useAppStore((state) => state.dataStrategy);
+  
+    // 1. Call both, but only "enable" the active one
+      const apolloResult = useSearchApollo(
+        queryString,
+        limit,
+        { skip: strategy !== 'APOLLO'},// Standard Apollo skip
+      );
+    
+      const tanstackResult = useSearchTanStack(
+        queryString,
+        limit,
+        {
+          enabled: strategy === 'TANSTACK' // Standard TanStack enabled
+        }
+      );
+    
+      // 2. Return the data from the active one
+      return strategy === 'APOLLO' ? apolloResult : tanstackResult;
 }
+
 

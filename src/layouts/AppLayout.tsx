@@ -1,5 +1,6 @@
-import React, { useContext, useState } from "react";
+import React, { Suspense, useContext, useState } from "react";
 import { matchPath, Outlet, useLocation} from "react-router-dom";
+import { ErrorBoundary } from "react-error-boundary";
 import { BreakpointContext } from "../contexts/Breakpoints/BreakpointContext";
 import { Header } from "../components/Header/Header";
 import { Sidebar } from "../components/Sidebar/Sidebar";
@@ -8,6 +9,7 @@ import { Route } from "../routes/routes";
 import { CurrentUserProvider } from "../contexts/CurrentUser/CurrentUserProvider";
 import { useWorkspace } from "../contexts/Workspace/WorkspaceContext";
 import { NotFound } from "../pages/NotFound";
+import { LoadingScreen } from "../pages/LoadingScreen";
 import styles from "./AppLayout.module.scss";
 
 export const AppLayout: React.FC = () => {
@@ -60,7 +62,23 @@ export const AppLayout: React.FC = () => {
               inert: isMobile && isSidebarOpen ? "" : undefined,
             } as Record<string, unknown>)}
           >
-            <Outlet />
+            <ErrorBoundary
+              fallback={
+                <div className="error-screen">
+                  Something went wrong.{" "}
+                  <button onClick={() => window.location.reload()}>
+                    Reload
+                  </button>
+                </div>
+              }
+              // onReset={() => {
+              //   // Optional: Clear storage or reset state here
+              // }}
+            >
+              <Suspense fallback={<LoadingScreen />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </main>
         </div>
       </div>

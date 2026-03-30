@@ -1,5 +1,5 @@
 import React from "react";
-import type { InteractionActivity } from "../../graphql/types";
+import type { InteractionActivity } from "../../types/schema";
 import { activityRenderers } from "../Dashboard/activityRenderer";
 
 type ProfileActivityProps = {

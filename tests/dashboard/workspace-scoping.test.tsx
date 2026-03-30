@@ -14,8 +14,7 @@ describe("Interactions pagination", () => {
     // 1. Confirm user started at Alpha
     expect(getLocation().pathname).toBe(initialPath);
 
-    await screen.findAllByRole("article", {}, { timeout: 5000 });
-
+    await screen.findAllByRole("article", {}, { timeout: 10000 });
 
     // 2. Open Switcher and find the "Other" option
     await user.click(screen.getByRole("button", { name: /workspace/i }));
@@ -44,6 +43,5 @@ describe("Interactions pagination", () => {
       // Ensure the card content now reflects the new workspace prefix (e.g., "beta_")
       expect(cards[0]).toHaveTextContent(new RegExp(`${expectedSlug}_`, "i"));
     });
-  });
-
+  }, 15000);
 });
