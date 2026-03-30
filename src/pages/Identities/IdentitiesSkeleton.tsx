@@ -1,17 +1,17 @@
 import styles from "./Identities.module.scss";
 import skeletonStyles from "./IdentitiesSkeleton.module.scss";
-import cardStyles from "../../components/Cards/PersonCard.module.scss"
+import cardStyles from "../../components/Cards/PersonCard.module.scss";
+import paginationStyles from "../../components/Pagination/Pagination.module.scss";
 import { Toolbar } from "../../components/Toolbars/Toolbar";
+
 
 
 export const IdentitiesSkeleton = ({ count = 12 }) => {
   return (
     <section>
-      <h1>
-        People
-      </h1>
+      <h1>People</h1>
       <div className={styles.paginationBar}>
-        <nav className={styles.pagination}>
+        <nav className={paginationStyles.pagination}>
           <div
             className={`${skeletonStyles.bone} ${skeletonStyles.pagination}`}
           />
