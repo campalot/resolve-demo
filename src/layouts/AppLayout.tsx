@@ -10,7 +10,10 @@ import { CurrentUserProvider } from "../contexts/CurrentUser/CurrentUserProvider
 import { useWorkspace } from "../contexts/Workspace/WorkspaceContext";
 import { NotFound } from "../pages/NotFound";
 import { LoadingScreen } from "../pages/LoadingScreen";
+import { DevCrashTrigger } from "../components/Development/DevCrashTrigger";
+import { useAppStore } from "../store/useAppStore";
 import styles from "./AppLayout.module.scss";
+import { ContentError } from "../pages/ErrorPages/ContentError";
 
 export const AppLayout: React.FC = () => {
   const workspace = useWorkspace();
@@ -18,6 +21,7 @@ export const AppLayout: React.FC = () => {
   const [userSetSidebarOpen, setUserSetSidebarOpen] = useState<boolean | null>(
     null,
   );
+  const { forceError, setForceError } = useAppStore();
 
   const location = useLocation();
 
@@ -63,18 +67,14 @@ export const AppLayout: React.FC = () => {
             } as Record<string, unknown>)}
           >
             <ErrorBoundary
-              fallback={
-                <div className="error-screen">
-                  Something went wrong.{" "}
-                  <button onClick={() => window.location.reload()}>
-                    Reload
-                  </button>
-                </div>
-              }
-              // onReset={() => {
-              //   // Optional: Clear storage or reset state here
-              // }}
+              onReset={() => setForceError(null)}
+              resetKeys={[forceError]}
+              fallbackRender={({ resetErrorBoundary }) => (
+                <ContentError resetErrorBoundary={resetErrorBoundary} />
+              )}
             >
+              {/* TRIGGER 2: Targets ONLY the Inner Content Boundary */}
+              <DevCrashTrigger target={forceError} currentTarget="content" />
               <Suspense fallback={<LoadingScreen />}>
                 <Outlet />
               </Suspense>

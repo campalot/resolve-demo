@@ -11,19 +11,30 @@ import { client } from "./api/mockApolloClient";
 import AppRouting from "./routes/AppRoutes";
 import { DevOverlay } from "./components/Development/DevOverlay";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SimpleShellLayout } from "./layouts/SimpleShellLayout";
+import { DevCrashTrigger } from "./components/Development/DevCrashTrigger";
+import { useAppStore } from "./store/useAppStore";
+import { AppError } from "./pages/ErrorPages/AppError";
 
 const queryClient = new QueryClient();
 
 const App: React.FC = () => {
+  const { forceError, setForceError } = useAppStore();
+
   return (
     <ErrorBoundary
-      fallback={
-        <div className="error-screen">
-          Something went wrong.{" "}
-          <button onClick={() => window.location.reload()}>Reload</button>
-        </div>
-      }
+      onReset={() => setForceError(null)}
+      resetKeys={[forceError]}
+      fallbackRender={({ resetErrorBoundary }) => (
+        <SimpleShellLayout>
+          <BrowserRouter>
+            <AppError resetErrorBoundary={resetErrorBoundary} />
+          </BrowserRouter>
+        </SimpleShellLayout>
+      )}
     >
+      {/* TRIGGER 1: Targets the Top-Level App Boundary */}
+      <DevCrashTrigger target={forceError} currentTarget="app" />
       <ApolloProvider client={client}>
         <QueryClientProvider client={queryClient}>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
