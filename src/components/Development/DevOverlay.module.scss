@@ -38,6 +38,7 @@
   // Toggle state
   &.closed {
     transform: translateX(100%);
+    box-shadow: none;
   }
 
   &.open {
