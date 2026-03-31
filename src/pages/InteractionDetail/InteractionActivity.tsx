@@ -26,7 +26,21 @@ export const InteractionActivity: React.FC<InteractionActivityProps> = ({
       });
 
   if (error) return <div>Failed to load activities</div>;
-  if (loading) return <div>Loading interaction timeline...</div>;
+  if (loading) {
+    return (
+      <Box className={styles.timeline}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Box key={i} className={styles.timelineItem}>
+            <Box className={styles.timelineIconSkeleton} />
+            <Box className={styles.timelineContent}>
+              <div className={styles.skeletonHeader} />
+              <div className={styles.skeletonBody} />
+            </Box>
+          </Box>
+        ))}
+      </Box>
+    );
+  }
 
   return (
     <Box className={styles.timeline}>

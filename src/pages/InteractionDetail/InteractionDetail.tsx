@@ -20,6 +20,7 @@ import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { useTransitionInteraction } from "../../hooks/useTransitionInteraction";
 import { TRANSITION_METADATA } from "./buildInteractionMetadata";
 import styles from "./InteractionDetail.module.scss";
+import { InteractionDetailSkeleton } from "./InteractionDetailSkeleton";
 
 const TABS = [
   { label: "Overview", path: "overview" },
@@ -160,7 +161,11 @@ export const InteractionDetail: React.FC = () => {
   const workspacePath = useWorkspacePath();
 
   // Guard rails
-  if (!interaction || !hasId) {
+  if (loading) {
+    return <InteractionDetailSkeleton />;
+  }
+
+  if ((!loading && !interaction) || !hasId) {
     return <div>Invalid interaction</div>;
   }
 

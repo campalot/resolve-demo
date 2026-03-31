@@ -9,6 +9,7 @@ import { IdentitiesFilterSheet } from "./IdentitiesFilterSheet";
 import { BreakpointContext } from "../../contexts/Breakpoints/BreakpointContext";
 import FilterIcon from "../../assets/filters-svgrepo-com.svg?react";
 import Button from "../../components/Buttons/Button";
+import { IdentitiesListSkeleton } from "./IdentitiesListSkeleton";
 
 const PARAM_PEOPLE = "Individual";
 
@@ -107,7 +108,7 @@ export const Identities: React.FC = () => {
       )}
 
       {loading ? (
-        <div className={styles.loadingMessage}>Loading identities...</div>
+        <IdentitiesListSkeleton />
       ) : (
         <IdentitiesList identities={identities} isSorting={isChangingParams} />
       )}
