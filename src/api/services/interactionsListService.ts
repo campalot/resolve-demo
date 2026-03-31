@@ -1,11 +1,8 @@
-import { delay } from 'msw';
 import type { Interaction } from "../../types/schema";
 import type { InteractionFilters } from "../../types/api";
 import type { InteractionRecord } from "../../types/api";
 import { interactionMatchesQuery, resolveInteraction } from "../mocks/common/resolvers";
 import { parseDate } from "../../helpers";
-
-const isTest = import.meta.env.MODE === 'test';
 
 export type InteractionsListVars = {
   workspaceId: string;
@@ -103,9 +100,6 @@ export const interactionsListService = {
     );
     const interactionStatuses = Array.from(new Set(resolved.map((int) => int.status)));
     const interactionTypes = Array.from(new Set(resolved.map((int) => int.type)));
-
-    //await delay(400);  // Latency
-    if (!isTest) await delay(400); 
 
     return {
       parties,

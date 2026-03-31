@@ -9,6 +9,7 @@ import { InteractionsFilterSheet } from "./InteractionsFilterSheet";
 import { BreakpointContext } from "../../contexts/Breakpoints/BreakpointContext";
 import FilterIcon from "../../assets/filters-svgrepo-com.svg?react";
 import Button from "../../components/Buttons/Button";
+import { InteractionsListSkeleton } from "./InteractionsListSkeleton";
 
 const PARAM_PARTY = "partyId";
 
@@ -117,7 +118,7 @@ export const Interactions: React.FC = () => {
       )}
 
       {loading ? (
-        <div className={styles.loadingMessage}>Loading interactions…</div>
+        <InteractionsListSkeleton />
       ) : (
         <InteractionsList interactions={interactions} />
       )}

@@ -5,6 +5,7 @@ import { ProfileInteractions } from "./ProfileInteractions";
 import { ProfileActivity } from "./ProfileActivity";
 import { useProfile } from "../../hooks/useProfile";
 import styles from "./Profile.module.scss";
+import { ProfileSkeleton } from "./ProfileSkeleton";
 
 export const Profile: React.FC = () => {
   const { identityId } = useParams<{
@@ -12,7 +13,7 @@ export const Profile: React.FC = () => {
     }>();
   const { identity, interactions, activities, loading, error } = useProfile(identityId);
   
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <ProfileSkeleton />;
 
   if (error) return <div>Failed to load profile</div>;
 

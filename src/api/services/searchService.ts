@@ -1,4 +1,3 @@
-import { delay } from 'msw';
 import type { Identity } from "../../types/schema";
 import type { InteractionRecord } from "../../types/api";
 import type { IdentityRecord } from "../../types/api";
@@ -42,8 +41,6 @@ export const searchService = {
     
     // Slice for pagination
     const batch = allResults.slice(offset, offset + limit);
-
-    await delay(300); // Latency
 
     return {
         __typename: "SearchResponse" as const,

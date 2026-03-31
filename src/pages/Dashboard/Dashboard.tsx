@@ -3,9 +3,12 @@ import type { InteractionActivity } from "../../types/schema";
 import { useInteractionActivities } from "../../hooks/useInteractionActivities";
 import { activityRenderers } from "./activityRenderer";
 import styles from "./Dashboard.module.scss";
+import { DashboardItemSkeleton } from "./DashboardItemSkeleton";
+import { DashboardSkeleton } from "./DashboardSkeleton";
 
 export const Dashboard: React.FC = () => {
   const feedRef = useRef<HTMLDivElement>(null);
+  const hasIntersectedRef = useRef(false);
   // At the bottom of the list
   const sentinelRef = useRef(null);
   const {
@@ -22,20 +25,30 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        // entries[0] is the sentinel <li>
-        // Check isFetchingNextPage to prevent double-firing
-        if (entries[0].isIntersecting && hasMore && !isFetchingNextPage) {
-          fetchNextPage();
+        const entry = entries[0];
+        // If NOT intersecting → reset the gate
+        if (!entry.isIntersecting) {
+          hasIntersectedRef.current = false;
+          return;
         }
+
+        // If already triggered while visible → ignore
+        if (hasIntersectedRef.current) return;
+
+        if (!hasMore) return;
+        if (isFetchingNextPage || loading) return; // 🔥 don't observe while loading
+
+        // 🔥 lock until it leaves viewport again
+        hasIntersectedRef.current = true;
+
+        fetchNextPage();
       },
       {
         // Set the <ul> as the container to watch
         root: feedRef.current,
-        // trigger when 10% of the 1px sentinel is visible
-        //threshold: 0.1,
         threshold: 0,
-        // Trigger when the sentinel is 200px away from the bottom of the viewport
-        rootMargin: "0px 0px 200px 0px",
+        // Trigger when the sentinel is 100px away from the bottom of the viewport
+        rootMargin: "0px 0px 100px 0px",
       },
     );
 
@@ -44,7 +57,20 @@ export const Dashboard: React.FC = () => {
     }
 
     return () => observer.disconnect();
-  }, [hasMore, isFetchingNextPage, fetchNextPage]);
+  }, [hasMore, isFetchingNextPage, fetchNextPage, loading]);
+
+  const isInitialLoad = loading && results.length === 0;
+
+  useEffect(() => {
+    if (!isFetchingNextPage) {
+      // 🔥 lock until it leaves viewport again
+      hasIntersectedRef.current = false;
+    }
+  }, [isFetchingNextPage]);
+
+  if (isInitialLoad) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div ref={feedRef} className={styles.dashboardFeed}>
@@ -58,6 +84,14 @@ export const Dashboard: React.FC = () => {
             </li>
           );
         })}
+        {/* 👇 Append skeleton items during fetching */}
+        {isFetchingNextPage &&
+          hasMore &&
+          Array.from({ length: 1 }).map((_, i) => (
+            <li key={`skeleton-${i}`} role="article">
+              <DashboardItemSkeleton />
+            </li>
+          ))}
         <li
           ref={sentinelRef}
           aria-hidden="true"
