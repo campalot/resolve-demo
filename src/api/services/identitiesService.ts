@@ -1,4 +1,4 @@
-import { HttpResponse, delay } from 'msw';
+import { HttpResponse } from 'msw';
 import type { IdentityFilters } from "../../types/api";
 import type { IdentityRecord } from "../../types/api";
 import { resolveIdentity, resolveInteraction, resolveInteractionActivity } from "../mocks/common/resolvers";
@@ -60,7 +60,6 @@ export const identityService = {
   },
 
   processProfile: async (workspaceId: string, identityId: string) => {
-    await delay(400); // Replaces your withLatency for GQL
     const db = getMockDb();
     const { activities, interactions } = getProfileInteractionsAndActivities(workspaceId as string, identityId as string);
     const resolvedInteractions = interactions.map(resolveInteraction);

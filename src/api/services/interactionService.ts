@@ -1,4 +1,3 @@
-import { delay } from 'msw';
 import { getMockDb, persistDb } from '../../mocks/mockDB';
 import { transitionInteraction as domainLogic } from './logic'; // Your existing function
 import type { TransitionVariables } from '../mocks/features/transitionhandlers';
@@ -9,8 +8,6 @@ import { resolveIdentity, resolveInteraction, resolveInteractionActivity } from 
 import type { InteractionActivity, ToastNotification } from '../../types/schema';
 import type { IdentityRecord } from "../../types/api";
 import { buildInteractionToastMessage } from '../../pages/InteractionDetail/buildInteractionMetadata';
-
-const isTest = import.meta.env.MODE === 'test';
 
 export const interactionService = {
   executeTransition: async (vars: TransitionVariables) => {
@@ -109,14 +106,10 @@ export const interactionService = {
 
     backendLogger.latencyEnd(200);
     backendLogger.endGroup();
-    if (!isTest) await delay(250); 
     return { transitionInteraction: finalData };
   },
 
   getInteraction: async (workspaceId: string, interactionId: string) => {
-    // 1. Shared Latency (consistent for both GQL and REST)
-    await new Promise(res => setTimeout(res, 400));
-
     const db = getMockDb();
     const interaction = db.interactions.find(
       (i) => i.id === interactionId && i.workspaceId === workspaceId
