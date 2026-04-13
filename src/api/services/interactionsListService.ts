@@ -18,7 +18,7 @@ export const interactionsListService = {
     const { workspaceId, sortBy, filters = {}, offset = 0, limit = 50 } = variables ?? {};
 
     // 1. Base Workspace Filter
-    let resolved = allInteractions.map(resolveInteraction).filter((i: Interaction) => i.workspaceId === workspaceId);
+    let resolved = allInteractions.map((interaction) => resolveInteraction(interaction)).filter((i: Interaction) => i.workspaceId === workspaceId);
     
     // 2. Apply Filters (Ported from your Apollo logic)
     const statusFilter = filters.status;
@@ -88,7 +88,7 @@ export const interactionsListService = {
     if (workspaceId) {
         workspaceInteractions = allInteractions.filter((interaction) => interaction.workspaceId === workspaceId);
     }
-    const resolved = workspaceInteractions.map(resolveInteraction);
+    const resolved = workspaceInteractions.map((interaction) => resolveInteraction(interaction));
 
     const parties = Array.from(
         new Map(
