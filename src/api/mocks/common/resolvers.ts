@@ -3,7 +3,10 @@ import type {
   Interaction,
   InteractionActivity,
   InteractionParty, 
+  InteractionState,
+  InteractionAction,
 } from "../../../types/schema";
+import type { Role } from "../../cache";
 import type {
   InteractionActivityRecord,
   InteractionActivityMetadataRecord_Decision
@@ -24,8 +27,25 @@ type IdentityStats = {
   lastActivityAt: number | null;
 }
 
-export function getProfileInteractionsAndActivities(workspaceId: string, identityId: string) {
-  const mockDb = getMockDb();
+export function getPermittedActions(
+  status: InteractionState,
+  role: Role
+): InteractionAction[] {
+  const workflowActions = WORKFLOW[status]?.allowedActions || [];
+
+  return workflowActions.filter(action =>
+    ROLE_PERMISSIONS[role].includes(action)
+  );
+}
+
+export function getProfileInteractionsAndActivities(
+  workspaceId: string, 
+  identityId: string,
+  options?: {
+    db?: ReturnType<typeof getMockDb>;
+  }
+) {
+  const mockDb = options?.db ?? getMockDb();
   let activities = mockDb.interactionActivities.filter((activity) => {
     return activity.workspaceId === workspaceId;
   })
@@ -72,8 +92,15 @@ export function getProfileInteractionsAndActivities(workspaceId: string, identit
   return { activities, interactions}
 }
 
-function resolveIdentityStats(workspaceId: string, identityId: string): IdentityStats {
-  const { activities, interactions } = getProfileInteractionsAndActivities(workspaceId, identityId);
+function resolveIdentityStats(
+  workspaceId: string, 
+  identityId: string,
+  options?: {
+    db?: ReturnType<typeof getMockDb>;
+  }
+): IdentityStats {
+  const mockDb = options?.db ?? getMockDb();
+  const { activities, interactions } = getProfileInteractionsAndActivities(workspaceId, identityId, { db: mockDb });
 
   const lastActivityAt = activities.length
     ? Math.max(...activities.map(a => new Date(a.occurredAt).getTime()))
@@ -100,27 +127,39 @@ function resolveIdentityStats(workspaceId: string, identityId: string): Identity
   }
 }
 
-export function resolveIdentity(identity: IdentityRecord): Identity & { stats: IdentityStats} {
-  const mockDb = getMockDb();
+export function resolveIdentity(
+  identity: IdentityRecord, 
+  options?: {
+    role?: Role;
+    db?: ReturnType<typeof getMockDb>;
+  }): Identity & { stats: IdentityStats} {
+  const mockDb = options?.db ?? getMockDb();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { companyId, ...resolvedIdentity } =  {
     ...identity,
     __typename: "Identity" as const,
     company: mockDb.identities.find((id: IdentityRecord) => id.id === identity.companyId),
-    stats: resolveIdentityStats(identity.workspaceId, identity.id),
+    stats: resolveIdentityStats(identity.workspaceId, identity.id, { db: mockDb }),
   };
 
   return resolvedIdentity;
 }
 
-export function resolveInteraction(interaction: InteractionRecord): Interaction {
-  const currentRole = useAppStore.getState().activeRole;
+export function resolveInteraction(
+    interaction: InteractionRecord, 
+    options?: {
+      role?: Role;
+      db?: ReturnType<typeof getMockDb>;
+    }
+  ): Interaction {
+  const currentRole = options?.role ?? useAppStore.getState().activeRole;
+  const mockDb = options?.db ?? getMockDb();
   // Use that role to filter the buttons/actions
-  const workflowActions = WORKFLOW[interaction.status].allowedActions;
-  const permittedActions = workflowActions.filter(action => 
-    ROLE_PERMISSIONS[currentRole].includes(action)
+  const permittedActions = getPermittedActions(
+    interaction.status,
+    currentRole
   );
-  const mockDb = getMockDb();
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { creatorId, currentReviewerId, ...resolvedInteraction } =  {
     __typename: "Interaction" as const,

@@ -16,7 +16,8 @@ export const searchService = {
     const { workspaceId, queryString, offset = 0, limit = 10 } = variables;
     const normalizedQuery = queryString?.toLowerCase().trim() ?? "";
 
-    const mockedDBTranslation = allInteractions.map(resolveInteraction);
+    const mockedDBTranslation = allInteractions.map((interaction) => resolveInteraction(interaction));
+    
     const matchingIdentities =
         normalizedQuery.length === 0
             ? []

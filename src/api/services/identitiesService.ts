@@ -62,7 +62,7 @@ export const identityService = {
   processProfile: async (workspaceId: string, identityId: string) => {
     const db = getMockDb();
     const { activities, interactions } = getProfileInteractionsAndActivities(workspaceId as string, identityId as string);
-    const resolvedInteractions = interactions.map(resolveInteraction);
+    const resolvedInteractions = interactions.map((interaction) => resolveInteraction(interaction));
     const resolvedActivities = activities.map((ia) => resolveInteractionActivity(ia));
 
     const identityRecord = db.identities.find(i => i.id === identityId && i.workspaceId === workspaceId);

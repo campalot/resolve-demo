@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { activeRoleVar } from '../api/cache';
 import type { Workspace } from '../types/schema';
-import { client } from '../api/mockApolloClient';
 
 type Role = 'Admin' | 'Editor' | 'Viewer';
 export type DataStrategy = 'APOLLO' | 'TANSTACK';
@@ -35,9 +33,7 @@ export const useAppStore = create<AppState>()(
       setActiveWorkspace: (workspace: Workspace) => set({ activeWorkspace: workspace }),
       isSyncing: false,
       setRole: (role) => {
-        // 1. Update the Apollo world (triggers the TypePolicy read)
-        activeRoleVar(role); 
-        // 2. Update the Zustand world (triggers your React hooks)
+        // Update the Zustand world (triggers your React hooks)
         set({ activeRole: role });
       },
       setSyncing: (bool) => set({ isSyncing: bool }),
@@ -62,17 +58,6 @@ export const useAppStore = create<AppState>()(
         return () => {
           // This runs when hydration finishes
           state.setHasHydrated(true);
-
-          // 🔥 Re-sync Apollo reactive var
-          if (state.activeRole) {
-            activeRoleVar(state.activeRole);
-            // TODO:
-            // Apollo reactive var dependency is not triggering TypePolicy recompute on hydration.
-            // Attempted Query.currentRole bridge caused instability in list/detail views.
-            // Revisit with safer dependency tracking or cache invalidation strategy
-            // in order to see the actions change when switching to Apollo 
-            client.reFetchObservableQueries();
-          }
         };
       },
       partialize: (state) => ({ 
