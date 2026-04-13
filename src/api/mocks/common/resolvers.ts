@@ -38,8 +38,14 @@ export function getPermittedActions(
   );
 }
 
-export function getProfileInteractionsAndActivities(workspaceId: string, identityId: string) {
-  const mockDb = getMockDb();
+export function getProfileInteractionsAndActivities(
+  workspaceId: string, 
+  identityId: string,
+  options?: {
+    db?: ReturnType<typeof getMockDb>;
+  }
+) {
+  const mockDb = options?.db ?? getMockDb();
   let activities = mockDb.interactionActivities.filter((activity) => {
     return activity.workspaceId === workspaceId;
   })
@@ -86,8 +92,15 @@ export function getProfileInteractionsAndActivities(workspaceId: string, identit
   return { activities, interactions}
 }
 
-function resolveIdentityStats(workspaceId: string, identityId: string): IdentityStats {
-  const { activities, interactions } = getProfileInteractionsAndActivities(workspaceId, identityId);
+function resolveIdentityStats(
+  workspaceId: string, 
+  identityId: string,
+  options?: {
+    db?: ReturnType<typeof getMockDb>;
+  }
+): IdentityStats {
+  const mockDb = options?.db ?? getMockDb();
+  const { activities, interactions } = getProfileInteractionsAndActivities(workspaceId, identityId, { db: mockDb });
 
   const lastActivityAt = activities.length
     ? Math.max(...activities.map(a => new Date(a.occurredAt).getTime()))
@@ -114,14 +127,19 @@ function resolveIdentityStats(workspaceId: string, identityId: string): Identity
   }
 }
 
-export function resolveIdentity(identity: IdentityRecord): Identity & { stats: IdentityStats} {
-  const mockDb = getMockDb();
+export function resolveIdentity(
+  identity: IdentityRecord, 
+  options?: {
+    role?: Role;
+    db?: ReturnType<typeof getMockDb>;
+  }): Identity & { stats: IdentityStats} {
+  const mockDb = options?.db ?? getMockDb();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { companyId, ...resolvedIdentity } =  {
     ...identity,
     __typename: "Identity" as const,
     company: mockDb.identities.find((id: IdentityRecord) => id.id === identity.companyId),
-    stats: resolveIdentityStats(identity.workspaceId, identity.id),
+    stats: resolveIdentityStats(identity.workspaceId, identity.id, { db: mockDb }),
   };
 
   return resolvedIdentity;
