@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
 import { ApolloProvider } from "@apollo/client";
@@ -15,8 +15,19 @@ import { SimpleShellLayout } from "./layouts/SimpleShellLayout";
 import { DevCrashTrigger } from "./components/Development/DevCrashTrigger";
 import { useAppStore } from "./store/useAppStore";
 import { AppError } from "./pages/ErrorPages/AppError";
+import { activeRoleVar } from "./api/cache";
 
 const queryClient = new QueryClient();
+
+function ApolloStateBridge() {
+  const activeRole = useAppStore((s) => s.activeRole);
+
+  useEffect(() => {
+    activeRoleVar(activeRole);
+  }, [activeRole]);
+
+  return null;
+}
 
 const App: React.FC = () => {
   const { forceError, setForceError } = useAppStore();
@@ -42,6 +53,7 @@ const App: React.FC = () => {
               <ToastProvider>
                 <ModalProvider>
                   <BrowserRouter>
+                    <ApolloStateBridge />
                     <AppRouting />
                     <DevOverlay />
                   </BrowserRouter>

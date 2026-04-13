@@ -1,8 +1,7 @@
 import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
 import type { InteractionState } from "../types/schema";
-import { WORKFLOW } from "../types/schema";
 import { activeRoleVar } from "./cache";
-import { ROLE_PERMISSIONS } from "../types/schema";
+import { getPermittedActions } from "./mocks/common/resolvers";
 
 // This tells Apollo: "Send all GQL queries to this local path"
 const httpLink = new HttpLink({
@@ -16,6 +15,11 @@ export const client = new ApolloClient({
     typePolicies: {
       Query: {
         fields: {
+          _roleDependency: {
+            read() {
+              return activeRoleVar();
+            },
+          },
           search: {
             keyArgs: ["workspaceId", "queryString"],
             merge(existing, incoming, { args }) {
@@ -95,16 +99,15 @@ export const client = new ApolloClient({
             read(_, { readField }) {
               // 1. Get the current status from the cache
               const status = readField('status') as InteractionState;
-              
+              readField('_roleDependency');
+
               // 2. Get the current role from our Reactive Var
               const currentRole = activeRoleVar(); 
 
-              // 3. Re-calculate exactly like we do in the MockLink
-              const workflowActions = WORKFLOW[status]?.allowedActions || [];
-              return workflowActions.filter(action => 
-                ROLE_PERMISSIONS[currentRole].includes(action)
-              );
-            }
+              // 3. Re-calculate
+              return getPermittedActions(status, currentRole);
+            },
+            merge: false,
           },
         },
       },
