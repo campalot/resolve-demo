@@ -91,8 +91,6 @@ export const interactionService = {
     });
     }
 
-    // const { permittedActions, data, description, ...prunedResolvedInteraction} = resolvedInteraction;
-
     const resolvedActivities = newActivities
     .map(activity => resolveInteractionActivity(activity))
     .filter((activity): activity is InteractionActivity => activity !== null)

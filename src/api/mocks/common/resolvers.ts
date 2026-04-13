@@ -3,7 +3,10 @@ import type {
   Interaction,
   InteractionActivity,
   InteractionParty, 
+  InteractionState,
+  InteractionAction,
 } from "../../../types/schema";
+import type { Role } from "../../cache";
 import type {
   InteractionActivityRecord,
   InteractionActivityMetadataRecord_Decision
@@ -22,6 +25,17 @@ type IdentityStats = {
   active: number;
   awaiting: number;
   lastActivityAt: number | null;
+}
+
+export function getPermittedActions(
+  status: InteractionState,
+  role: Role
+): InteractionAction[] {
+  const workflowActions = WORKFLOW[status]?.allowedActions || [];
+
+  return workflowActions.filter(action =>
+    ROLE_PERMISSIONS[role].includes(action)
+  );
 }
 
 export function getProfileInteractionsAndActivities(workspaceId: string, identityId: string) {
@@ -113,14 +127,21 @@ export function resolveIdentity(identity: IdentityRecord): Identity & { stats: I
   return resolvedIdentity;
 }
 
-export function resolveInteraction(interaction: InteractionRecord): Interaction {
-  const currentRole = useAppStore.getState().activeRole;
+export function resolveInteraction(
+    interaction: InteractionRecord, 
+    options?: {
+      role?: Role;
+      db?: ReturnType<typeof getMockDb>;
+    }
+  ): Interaction {
+  const currentRole = options?.role ?? useAppStore.getState().activeRole;
+  const mockDb = options?.db ?? getMockDb();
   // Use that role to filter the buttons/actions
-  const workflowActions = WORKFLOW[interaction.status].allowedActions;
-  const permittedActions = workflowActions.filter(action => 
-    ROLE_PERMISSIONS[currentRole].includes(action)
+  const permittedActions = getPermittedActions(
+    interaction.status,
+    currentRole
   );
-  const mockDb = getMockDb();
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { creatorId, currentReviewerId, ...resolvedInteraction } =  {
     __typename: "Interaction" as const,
