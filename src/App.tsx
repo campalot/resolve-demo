@@ -16,8 +16,17 @@ import { DevCrashTrigger } from "./components/Development/DevCrashTrigger";
 import { useAppStore } from "./store/useAppStore";
 import { AppError } from "./pages/ErrorPages/AppError";
 import { activeRoleVar } from "./api/cache";
+import { ensureMsw } from "./api/mswManager";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      retryOnMount: true,
+    },
+  },
+});
 
 function ApolloStateBridge() {
   const activeRole = useAppStore((s) => s.activeRole);
@@ -32,9 +41,22 @@ function ApolloStateBridge() {
 const App: React.FC = () => {
   const { forceError, setForceError } = useAppStore();
 
+  useEffect(() => {
+    const handleFocus = async () => {
+      await ensureMsw();
+      await queryClient.invalidateQueries();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
   return (
     <ErrorBoundary
-      onReset={() => setForceError(null)}
+      onReset={() => {
+        setForceError(null);
+        queryClient.invalidateQueries(); // make sure to refetch query after some failure
+      }}
       resetKeys={[forceError]}
       fallbackRender={({ resetErrorBoundary }) => (
         <SimpleShellLayout>
