@@ -1,6 +1,7 @@
 import React, { Suspense, useContext, useState } from "react";
 import { matchPath, Outlet, useLocation} from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
+import { useQueryClient } from "@tanstack/react-query";
 import { BreakpointContext } from "../contexts/Breakpoints/BreakpointContext";
 import { Header } from "../components/Header/Header";
 import { Sidebar } from "../components/Sidebar/Sidebar";
@@ -17,6 +18,7 @@ import { ContentError } from "../pages/ErrorPages/ContentError";
 
 export const AppLayout: React.FC = () => {
   const workspace = useWorkspace();
+  const queryClient = useQueryClient();
   const { isMobile } = useContext(BreakpointContext);
   const [userSetSidebarOpen, setUserSetSidebarOpen] = useState<boolean | null>(
     null,
@@ -67,7 +69,10 @@ export const AppLayout: React.FC = () => {
             } as Record<string, unknown>)}
           >
             <ErrorBoundary
-              onReset={() => setForceError(null)}
+              onReset={() => {
+                setForceError(null);
+                queryClient.invalidateQueries(); // make sure to refetch query after some failure
+              }}
               resetKeys={[forceError]}
               fallbackRender={({ resetErrorBoundary }) => (
                 <ContentError resetErrorBoundary={resetErrorBoundary} />
