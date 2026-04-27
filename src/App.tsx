@@ -44,7 +44,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleFocus = async () => {
       await ensureMsw();
-      await queryClient.invalidateQueries();
+      await queryClient.refetchQueries({ type: "active" });
     };
 
     window.addEventListener("focus", handleFocus);
