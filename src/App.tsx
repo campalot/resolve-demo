@@ -55,7 +55,7 @@ const App: React.FC = () => {
     <ErrorBoundary
       onReset={() => {
         setForceError(null);
-        queryClient.invalidateQueries(); // make sure to refetch query after some failure
+        queryClient.refetchQueries({ type: "active" }); // make sure to refetch query after some failure
       }}
       resetKeys={[forceError]}
       fallbackRender={({ resetErrorBoundary }) => (
